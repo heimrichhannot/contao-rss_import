@@ -16,5 +16,5 @@
  */
 ClassLoader::addClasses(array
 (
-	'RssImport' => 'system/modules/xRssImport/RssImport.php',
+	'RssImport' => 'system/modules/xRssImport3/RssImport3.php',
 ));

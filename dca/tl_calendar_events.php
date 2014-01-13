@@ -30,8 +30,16 @@
 
 
 /**
- * Table tl_news
+ * Table tl_calendar_events
  */
 
 $GLOBALS['TL_DCA']['tl_calendar_events']['config']['ondelete_callback'][] = array('RssImport', 'deleteAttachments');
 $GLOBALS['TL_DCA']['tl_calendar_events']['config']['onload_callback'][] = 	array('RssImport', 'importNewFeeds');
+
+// Fields
+$tmpfields= array
+	(
+       'rssimp_guid' => array ('sql' => "mediumtext NULL"),
+	   'rssimp_link' => array ('sql' => "mediumtext NULL"),
+	);
+$GLOBALS['TL_DCA']['tl_calendar_events']['fields']= array_merge($GLOBALS['TL_DCA']['tl_calendar_events']['fields'],$tmpfields);

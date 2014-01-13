@@ -41,8 +41,7 @@ $this->loadLanguageFile('tl_calendar_events');
 // Palettes 
 
 $GLOBALS['TL_DCA']['tl_calendar']['palettes']['default'] = 
-str_replace(',makeFeed', ',makeFeed'. ';{rssimp_legend:hide},rssimp_imp', $GLOBALS['TL_DCA']['tl_calendar']['palettes']['default']);
-
+	str_replace('{protected_legend:hide}', '{rssimp_legend:hide},rssimp_imp;'.'{protected_legend:hide}', $GLOBALS['TL_DCA']['tl_calendar']['palettes']['default']);
 
 
 
@@ -64,6 +63,7 @@ $tmpfields= array
 			'exclude'               => true,         
             'default'               => '', 
             'eval'                  => array('mandatory'=>false, 'isBoolean' => true, 'submitOnChange' => true), 
+			'sql'					=> "char(1) NOT NULL default ''",
         ),		
 
         'rssimp_impurl' => array
@@ -71,7 +71,8 @@ $tmpfields= array
 			'label'                 => &$GLOBALS['TL_LANG']['tl_calendar']['rssimp_impurl'],
 			'exclude'               => true,
 			'inputType'             => 'text',
-			'eval'                  => array('rgxp'=>'url', 'mandatory'=>true, 'tl_class'=>'long', 'decodeEntities'=>true)
+			'eval'                  => array('rgxp'=>'url', 'mandatory'=>true, 'tl_class'=>'long', 'decodeEntities'=>true),
+			'sql'					=> "varchar(255) NOT NULL default ''",
 		),
 
 		'rssimp_imgpath' => array
@@ -79,7 +80,8 @@ $tmpfields= array
 			'label'                 => &$GLOBALS['TL_LANG']['tl_calendar']['rssimp_imgpath'],
 			'exclude'               => true,
 			'inputType'             => 'fileTree',
-			'eval'                  => array('mandatory'=>true,'fieldType'=>'radio', 'path'=>'')
+			'eval'                  => array('mandatory'=>true,'fieldType'=>'radio', 'path'=>''),
+			'sql'					=> "varchar(255) NOT NULL default ''",
 		), 
 
 		'rssimp_published' => array
@@ -89,18 +91,20 @@ $tmpfields= array
 			'filter'                => true,
 			'flag'                  => 1,
 			'inputType'             => 'checkbox',
-			'eval'                  => array('doNotCopy'=>true, 'tl_class'=>'w50')
+			'eval'                  => array('doNotCopy'=>true, 'tl_class'=>'w50'),
+			'sql'					=> "char(1) NOT NULL default ''",
 		),
 
-//		'rssimp_subtitlesrc' => array
-//		(
+		'rssimp_subtitlesrc' => array
+		(
 //			'label'                 => &$GLOBALS['TL_LANG']['tl_calendar']['rssimp_subtitlesrc'],
 //			'sorting'               => true, 
 //			'inputType' 			=> 'select',
 //			'exclude'               => true,		
 //			'options' 				=> array('category'=>'category (rss, atom)', 'contributor'=>'contributor (atom)', 'rights'=>'rights (atom)'),
-//			'eval'                  => array('mandatory'=>false, 'tl_class'=>'w50', 'includeBlankOption' => true)
-//		),
+//			'eval'                  => array('mandatory'=>false, 'tl_class'=>'w50', 'includeBlankOption' => true),
+			'sql'					=> "varchar(64) NOT NULL default ''",
+		),
 
 		'rssimp_teaserhtml' => array
 		(
@@ -109,7 +113,8 @@ $tmpfields= array
 			'filter'                => true,
 			'flag'                  => 1,
 			'inputType'             => 'checkbox',
-			'eval'                  => array('doNotCopy'=>true, 'tl_class'=>'w50')
+			'eval'                  => array('doNotCopy'=>true, 'tl_class'=>'w50'),
+			'sql'					=> "varchar(1) NOT NULL default ''",
 		),
 
 		'rssimp_allowedTags' => array
@@ -118,7 +123,8 @@ $tmpfields= array
 			'exclude'               => true,
 			'inputType'             => 'text',
 			'default'				=> &$GLOBALS['TL_CONFIG']['allowedTags'],
-			'eval'                  => array('preserveTags'=>true,'tl_class'=>'clr','mandatory'=>false,'tl_class'=>'long')
+			'eval'                  => array('preserveTags'=>true,'tl_class'=>'clr','mandatory'=>false,'tl_class'=>'long'),
+			'sql'					=> "text NOT NULL",
 		),
 
 		'rssimp_author' => array
@@ -131,7 +137,8 @@ $tmpfields= array
 			'flag'                    => 11,
 			'inputType'               => 'select',
 			'foreignKey'              => 'tl_user.name',
-			'eval'                    => array('doNotCopy'=>true, 'mandatory'=>true, 'includeBlankOption'=>true, 'tl_class'=>'w50')
+			'eval'                    => array('doNotCopy'=>true, 'mandatory'=>true, 'includeBlankOption'=>true, 'tl_class'=>'w50'),
+			'sql'					=> "int(10) unsigned NOT NULL default '0'",
 		),
 		
 );

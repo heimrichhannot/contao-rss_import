@@ -35,3 +35,11 @@
 
 $GLOBALS['TL_DCA']['tl_news']['config']['ondelete_callback'][] = array('RssImport', 'deleteAttachments');
 $GLOBALS['TL_DCA']['tl_news']['config']['onload_callback'][] = 	array('RssImport', 'importNewFeeds');
+
+// Fields
+$tmpfields= array
+	(
+       'rssimp_guid' => array ('sql' => "mediumtext NULL"),
+	   'rssimp_link' => array ('sql' => "mediumtext NULL"),
+	);
+$GLOBALS['TL_DCA']['tl_news']['fields']= array_merge($GLOBALS['TL_DCA']['tl_news']['fields'],$tmpfields);
