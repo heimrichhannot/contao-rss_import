@@ -48,12 +48,14 @@ require_once('RssImportClasses.php');
 class RssImport extends Backend
 {
 	private $_iStatsItemsRead;
-	private $_iSatsItemsInserted;
+	private $_iStatsItemsInserted;
 	private $_iStatsItemsUpdated;
 	private $_sMakeLocalErrorWarning;
 	private $_sTable;
 	const TL_NEWS = 'tl_news';
+	const TL_NEWS_ARCHIVE = 'tl_news_archive';
 	const TL_EVENTS = 'tl_calendar_events';
+	const TL_CALENDAR = 'tl_calendar';
 		
 	/**
 	 * Import all new designated feeds for news, could periodically be called by a Cron-Job   
@@ -63,11 +65,14 @@ class RssImport extends Backend
 	{
 		$this->_sTable = self::TL_NEWS;
 		$aNewsArchives= $this->_fetchDatasForFeedimport();
+		
 		if(is_array($aNewsArchives))
+		{
 			foreach ($aNewsArchives as $aNewsArchiveRow) // Für alle Archive
-				{	
-					$this->_writeFeed($aNewsArchiveRow);
-				}
+			{
+				$this->_writeFeed($aNewsArchiveRow);
+			}
+		}
 	}
 	
 	/**
@@ -79,10 +84,12 @@ class RssImport extends Backend
 		$this->_sTable = 'tl_calendar_events';
 		$aNewsArchives= $this->_fetchDatasForFeedimport();
 		if(is_array($aNewsArchives))
+		{
 			foreach ($aNewsArchives as $aNewsArchiveRow) // Für alle Archive
-				{	
+			{	
 					$this->_writeFeed($aNewsArchiveRow);
-				}
+			}
+		}
 	}
 	
 	/**
@@ -93,11 +100,20 @@ class RssImport extends Backend
 	public function importNewFeeds(Datacontainer $dc)
 	{
 		$this->_sTable = $dc->table;
+		
+		/*
 		if ( $this->_sTable == self::TL_NEWS )
 			$sql = "SELECT * FROM tl_news_archive WHERE id=? AND rssimp_imp = ?";
 		elseif ( $this->_sTable == self::TL_EVENTS )
 			$sql = "SELECT * FROM tl_calendar WHERE id=? AND rssimp_imp = ?";
-			
+		*/
+		
+		$sTable = ($this->_sTable == self::TL_NEWS) ? 'tl_news_archive' : 'tl_calendar';
+		
+		$sql = "SELECT $sTable.*, tl_files.path FROM $sTable"; 
+		$sql .= " LEFT JOIN tl_files ON $sTable.rssimp_imgpath LIKE tl_files.uuid";
+		$sql .= " WHERE $sTable.id = ? AND $sTable.rssimp_imp = ?";
+		
 		if (isset($sql))
 		{
 			$oResult = $this->Database->prepare($sql)
@@ -118,21 +134,65 @@ class RssImport extends Backend
 	public function deleteAttachments(Datacontainer $dc)
 	{
 		$this->_sTable = $dc->table; 
-		if ( $this->_sTable == self::TL_NEWS )
-			$sql = "SELECT tl_news.* FROM tl_news INNER JOIN tl_news_archive ON tl_news.pid = tl_news_archive.id  WHERE tl_news.id=? AND tl_news_archive.rssimp_imp = ?";
-		elseif ( $this->_sTable == self::TL_EVENTS )
-			$sql = "SELECT tl_calendar_events.* FROM tl_calendar_events INNER JOIN tl_calendar ON tl_calendar_events.pid = tl_calendar.id  WHERE tl_calendar_events.id=? AND tl_calendar.rssimp_imp = ?";
-		if (isset($sql))
+		
+		switch($this->_sTable)
+		{
+			case self::TL_NEWS_ARCHIVE :
+				$sTable = 'tl_news';
+				$sIdColumn = 'pid';
+				break;
+			case self::TL_CALENDAR :
+				$sTable = 'tl_calendar_events';
+				$sIdColumn = 'pid';
+				break;
+			case self::TL_NEWS :
+				$sTable = 'tl_news';
+				$sIdColumn = 'id';
+				break;
+			case self::TL_EVENTS :
+				$sTable = 'tl_calendar_events';
+				$sIdColumn = 'id';
+				break;
+			default :
+				$sTable = false;
+				$sIdColumn = false;
+				break;
+		}
+		
+		$sql = "SELECT $sTable.id, tl_files.uuid AS uuid, tl_files.path FROM tl_files";
+			$sql .= " LEFT JOIN $sTable ON tl_files.uuid = $sTable.singleSRC";
+			$sql .= " WHERE $sTable.$sIdColumn = ?";
+			$sql .= " GROUP BY tl_files.id";
+
+		if ($sTable && $sIdColumn)
 		{
 			$oResult = $this->Database->prepare($sql)
-										->execute($dc->id,'1');
+										->execute($dc->id);
+				
 			if ($oResult->numRows > 0)
 			{
-				$oRow= $oResult->fetchAssoc();
-				if (strlen($oRow[singleSRC])>0)
-					unlink (TL_ROOT . '/' . $oRow[singleSRC]);
+				$aRows = $oResult->fetchAllAssoc();
+				
+				if(is_array($aRows))
+				{
+					foreach($aRows as $aRow)
+					{
+						if (file_exists(TL_ROOT . '/' . $aRow['path']) && $this->_checkIfAttachmentIsUnused($aRow['id'], $aRow['uuid'], $sTable))
+						{
+							unlink (TL_ROOT . '/' . $aRow['path']);
+							\Dbafs::deleteResource($aRow['path']);
+						}
+					}
+				}
 			}
 		}
+	}
+	
+	private function _checkIfAttachmentIsUnused($id, $uuid, $sTable)
+	{
+		$sql = "SELECT id FROM $sTable WHERE id != ? AND HEX(singleSRC) = ?";
+		$oResult = $this->Database->prepare($sql)->execute($id, bin2hex($uuid));
+		return $oResult->numRows == 0;
 	}
 	
 	/**
@@ -151,6 +211,7 @@ class RssImport extends Backend
 		
 		if ($oResult->numRows > 0)
 			$sAlias .= '-'.$iId;
+			
 		return $sAlias;
 	}
 
@@ -171,11 +232,12 @@ class RssImport extends Backend
 	 * @return array
 	 */	
 	private function _fetchDatasForFeedimport()
-	{
-		if ( $this->_sTable == self::TL_NEWS )
-			$sql = "SELECT * FROM tl_news_archive WHERE rssimp_imp = ? ";
-		elseif ( $this->_sTable == self::TL_EVENTS )
-			$sql = "SELECT * FROM tl_calendar WHERE rssimp_imp = ? ";
+	{	
+		$sTable = ($this->_sTable == self::TL_NEWS) ? 'tl_news_archive' : 'tl_calendar';
+		
+		$sql = "SELECT $sTable.*, tl_files.path FROM $sTable"; 
+		$sql .= "LEFT JOIN tl_files ON rssimp_imgpath LIKE uuid";
+		$sql .= "WHERE rssimp_imp = ?";
 			
 		if(isset($sql))
 		{
@@ -204,14 +266,13 @@ class RssImport extends Backend
 			$sPartForLog = "Update Events, Calendar ID: ".$aRssImportRow['id'];
 		
 		//Url ist leer? => return
-		if (strlen(trim($aRssImportRow['rssimp_impurl']))<1)
+		if (strlen(trim($aRssImportRow['rssimp_impurl'])) < 1)
 		{
-
 			$this->log($sPartForLog . " - Url is empty!", 'RssImport _writefeed', TL_GENERAL);			
 			return false;
 		}  
 		// initialisiere Werte für Statistik 
-		$this->_iStatsItemsRead=$this->_iSatsItemsInserted=$this->_iStatsItemsUpdated=0; 
+		$this->_iStatsItemsRead = $this->_iStatsItemsInserted = $this->_iStatsItemsUpdated = 0; 
 		// lese den Feed
 		$oFeed = new FeedChannelFps();
 		if (! $oFeed->getFeed($aRssImportRow['rssimp_impurl']) ) 
@@ -221,144 +282,146 @@ class RssImport extends Backend
 			return false; 			// Feed konnte nicht gelesen werden
 		}
 		$arSimplePieItems = $oFeed->arItems;
-		
+				
 		// Für alle Beitraege ...
 		if ($arSimplePieItems) 
-		foreach ($arSimplePieItems as $oResultItem)
-		 {	
-			$this->_iStatsItemsRead+= 1;
+		{
+			foreach ($arSimplePieItems as $oResultItem)
+			{
+				$aTmpArr[] = $oResultItem;
+				$this->_iStatsItemsRead += 1;
 
-			// hole erlaubte tags
-			$sAllowedTags= $aRssImportRow['rssimp_allowedTags']; 	
-			
-			// hole subtitle
-			if ($aRssImportRow['rssimp_subtitlesrc'])
-			{
-				switch($aRssImportRow['rssimp_subtitlesrc'])
-					{
-					case ('category'):
-						if ($oResultItem->arCategoryLabels)
-							$oResultItem->sSubtitle = implode(', ',$oResultItem->arCategoryLabels);
-						break;
-					case ('contributor'):
-						$oResultItem->sSubtitle= $oResultItem->sContributorName;
-						break;
-					case ('rights'):
-						$oResultItem->sSubtitle= $oResultItem->sCopyright;
-						break;
-					default:
-						$oResultItem->sSubtitle= '';
-					}
-			}
-			
-			// hole teaser
-			$teaser = $this->_notempty($oResultItem->sDescription);
-			// convert {space,t,n} to a single space 
-			$teaser = preg_replace('/\s+/', ' ', substr($teaser, 0, 4096)); 
-			// entferne tags 
-			if ($aRssImportRow['rssimp_teaserhtml'] < 1) 
-				$teaser = strip_tags( html_entity_decode($teaser, ENT_NOQUOTES, $GLOBALS['TL_CONFIG']['characterSet']));
-			else
-				$teaser = strip_tags( html_entity_decode($teaser, ENT_NOQUOTES, $GLOBALS['TL_CONFIG']['characterSet']), $sAllowedTags);
+				// hole erlaubte tags
+				$sAllowedTags = $aRssImportRow['rssimp_allowedTags']; 	
 				
-			if ($this->_sTable == self::TL_NEWS)
-			{
-				//Prepare record for tl_news
-				$aSet = array(
-					//id => auto;
-					'pid' => $this->_notempty($aRssImportRow['id']),
-					'tstamp' => $this->_notempty($oResultItem->iUpdated),
-					//'tstamp' => $this->parseDate($GLOBALS['TL_CONFIG']['datimFormat'], $this->notempty($arMyItem->updated)),
-					'headline' => $this->_notempty($oResultItem->sTitle),
-					'alias' => '',
-					'author' => $this->_notempty($aRssImportRow['rssimp_author']),
-					'date' => $this->_notempty($oResultItem->iPublished),
-					'time' => $this->_notempty($oResultItem->iPublished),
-					'subheadline' => $this->_notempty($oResultItem->sSubtitle),
-					'teaser' => $teaser,
-					'text' => $this->_notempty(strip_tags($oResultItem->sContent, $sAllowedTags)),
-					'singleSRC'=> '', 
-					//alt
-					'addImage'=> isset($oResultItem->oImage),
-					'imagemargin' => $this->_notempty($aRssImportRow['imgdefaults_imgmargin']),
-					'size' => $this->_notempty($aRssImportRow['imgdefaults_imgsize']),
-					'fullsize' => $this->_notempty($aRssImportRow['imgdefaults_imgfullsize']),
-					'imageUrl'=> $this->_notempty($oResultItem->oImage->sLink),
-					//caption
-					'floating' => $this->_notempty($aRssImportRow['imgdefaults_imgfloating']),
-					//addEnclosure
-					//enclosure
-					source => 'default',
-					//jumpTo => ''; //Weiterleitungsziel intern
-					//articleId => '';
-					'url' => $this->_notempty($oResultItem->sLink), // Weiterleitungsziel
-					//target 
-					'cssClass' => $this->_notempty($aRssImportRow['expertdefaults_cssclass']),
-					//noComments => '';
-					//featured => '';
-					'published' => $this->_notempty($aRssImportRow['rssimp_published']),
-					//start => '';
-					//stop => '';
-					//tags => '';
-					'rssimp_guid' => $this->_notempty($oResultItem->sGuid),
-					'rssimp_link' => $this->_notempty($oResultItem->sLink),
-				);
-			}
-			elseif ($this->_sTable == self::TL_EVENTS)
-			{
-				//Prepare record for tl_calendar_events
-				$aSet = array(
-					//id => auto;
-					'pid' => $this->_notempty($aRssImportRow['id']),
-					'tstamp' => time(), //$this->_notempty($oResultItem->iUpdated),
-					//'tstamp' => $this->parseDate($GLOBALS['TL_CONFIG']['datimFormat'], $this->notempty($arMyItem->updated)),
-					'title' => $this->_notempty($oResultItem->sTitle),
-					'alias' => '',
-					'author' => $this->_notempty($aRssImportRow['rssimp_author']),
-					'addTime' => '',
-					'startDate' => $this->_notempty($oResultItem->iPublished),
-					'startTime' => $this->_notempty($oResultItem->iPublished),
-					//'subheadline' => $this->_notempty($oResultItem->sSubtitle),
-					'teaser' => $teaser,
-					'details' => $this->_notempty(strip_tags($oResultItem->sContent, $sAllowedTags)),
-					'singleSRC'=> '', 
-					//alt
-					'addImage'=> isset($oResultItem->oImage),
-					'imagemargin' => $this->_notempty($aRssImportRow['imgdefaults_imgmargin']),
-					'size' => $this->_notempty($aRssImportRow['imgdefaults_imgsize']),
-					'fullsize' => $this->_notempty($aRssImportRow['imgdefaults_imgfullsize']),
-					'imageUrl'=> $this->_notempty($oResultItem->oImage->sLink),
-					//caption
-					'floating' => $this->_notempty($aRssImportRow['imgdefaults_imgfloating']),
-					//addEnclosure
-					//enclosure
-					source => 'default',
-					//jumpTo => ''; //Weiterleitungsziel intern
-					//articleId => '';
-					'url' => $this->_notempty($oResultItem->sLink), // Weiterleitungsziel
-					//target 
-					'cssClass' => $this->_notempty($aRssImportRow['expertdefaults_cssclass']),
-					//noComments => '';
-					//featured => '';
-					'published' => $this->_notempty($aRssImportRow['rssimp_published']),
-					//start => '';
-					//stop => '';
-					//tags => '';
-					'rssimp_guid' => $this->_notempty($oResultItem->sGuid),
-					'rssimp_link' => $this->_notempty($oResultItem->sLink),
-				);
-			} 
-			
-			if(is_array($aSet))
-				$this->_writeSingleItem($aSet, $aRssImportRow);
-			else
-				return false;
-		} // endforeach $arSimplePieItems
+				// hole subtitle
+				if ($aRssImportRow['rssimp_subtitlesrc'])
+				{
+					switch($aRssImportRow['rssimp_subtitlesrc'])
+					{
+						case ('category'):
+							if ($oResultItem->arCategoryLabels)
+								$oResultItem->sSubtitle = implode(', ',$oResultItem->arCategoryLabels);
+							break;
+						case ('contributor'):
+							$oResultItem->sSubtitle = $oResultItem->sContributorName;
+							break;
+						case ('rights'):
+							$oResultItem->sSubtitle = $oResultItem->sCopyright;
+							break;
+						default:
+							$oResultItem->sSubtitle = '';
+					}
+				}
+				
+				// hole teaser
+				$teaser = $this->_notempty($oResultItem->sDescription);
+				// convert {space,t,n} to a single space 
+				$teaser = preg_replace('/\s+/', ' ', substr($teaser, 0, 4096)); 
+				// entferne tags 
+				if ($aRssImportRow['rssimp_teaserhtml'] < 1) 
+					$teaser = strip_tags( html_entity_decode($teaser, ENT_NOQUOTES, $GLOBALS['TL_CONFIG']['characterSet']));
+				else
+					$teaser = strip_tags( html_entity_decode($teaser, ENT_NOQUOTES, $GLOBALS['TL_CONFIG']['characterSet']), $sAllowedTags);
+					
+				if ($this->_sTable == self::TL_NEWS)
+				{
+					//Prepare record for tl_news
+					$aSet = array(
+						//id => auto;
+						'pid' => $this->_notempty($aRssImportRow['id']),
+						'tstamp' => $this->_notempty($oResultItem->iUpdated),
+						//'tstamp' => $this->parseDate($GLOBALS['TL_CONFIG']['datimFormat'], $this->notempty($arMyItem->updated)),
+						'headline' => $this->_notempty($oResultItem->sTitle),
+						'alias' => '',
+						'author' => $this->_notempty($aRssImportRow['rssimp_author']),
+						'date' => $this->_notempty($oResultItem->iPublished),
+						'time' => $this->_notempty($oResultItem->iPublished),
+						'subheadline' => $this->_notempty($oResultItem->sSubtitle),
+						'teaser' => $teaser,
+						//'text' => $this->_notempty(strip_tags($oResultItem->sContent, $sAllowedTags)),
+						'singleSRC'=> '', 
+						//alt
+						'addImage'=> isset($oResultItem->oImage),
+						'imagemargin' => $this->_notempty($aRssImportRow['imgdefaults_imgmargin']),
+						'size' => $this->_notempty($aRssImportRow['imgdefaults_imgsize']),
+						'fullsize' => $this->_notempty($aRssImportRow['imgdefaults_imgfullsize']),
+						'imageUrl'=> $this->_notempty($oResultItem->oImage->sLink),
+						//caption
+						'floating' => $this->_notempty($aRssImportRow['imgdefaults_imgfloating']),
+						//addEnclosure
+						//enclosure
+						'source' => 'default',
+						//jumpTo => ''; //Weiterleitungsziel intern
+						//articleId => '';
+						'url' => $this->_notempty($oResultItem->sLink), // Weiterleitungsziel
+						//target 
+						'cssClass' => $this->_notempty($aRssImportRow['expertdefaults_cssclass']),
+						//noComments => '';
+						//featured => '';
+						'published' => $this->_notempty($aRssImportRow['rssimp_published']),
+						//start => '';
+						//stop => '';
+						//tags => '';
+						'rssimp_guid' => $this->_notempty($oResultItem->sGuid),
+						'rssimp_link' => $this->_notempty($oResultItem->sLink),
+					);
+				}
+				elseif ($this->_sTable == self::TL_EVENTS)
+				{
+					//Prepare record for tl_calendar_events
+					$aSet = array(
+						//id => auto;
+						'pid' => $this->_notempty($aRssImportRow['id']),
+						'tstamp' => time(), //$this->_notempty($oResultItem->iUpdated),
+						//'tstamp' => $this->parseDate($GLOBALS['TL_CONFIG']['datimFormat'], $this->notempty($arMyItem->updated)),
+						'title' => $this->_notempty($oResultItem->sTitle),
+						'alias' => '',
+						'author' => $this->_notempty($aRssImportRow['rssimp_author']),
+						'addTime' => '',
+						'startDate' => $this->_notempty($oResultItem->iPublished),
+						'startTime' => $this->_notempty($oResultItem->iPublished),
+						//'subheadline' => $this->_notempty($oResultItem->sSubtitle),
+						'teaser' => $teaser,
+						//'details' => $this->_notempty(strip_tags($oResultItem->sContent, $sAllowedTags)),
+						'singleSRC'=> '', 
+						//alt
+						'addImage'=> isset($oResultItem->oImage),
+						'imagemargin' => $this->_notempty($aRssImportRow['imgdefaults_imgmargin']),
+						'size' => $this->_notempty($aRssImportRow['imgdefaults_imgsize']),
+						'fullsize' => $this->_notempty($aRssImportRow['imgdefaults_imgfullsize']),
+						'imageUrl'=> $this->_notempty($oResultItem->oImage->sLink),
+						//caption
+						'floating' => $this->_notempty($aRssImportRow['imgdefaults_imgfloating']),
+						//addEnclosure
+						//enclosure
+						'source' => 'default',
+						//jumpTo => ''; //Weiterleitungsziel intern
+						//articleId => '';
+						'url' => $this->_notempty($oResultItem->sLink), // Weiterleitungsziel
+						//target 
+						'cssClass' => $this->_notempty($aRssImportRow['expertdefaults_cssclass']),
+						//noComments => '';
+						//featured => '';
+						'published' => $this->_notempty($aRssImportRow['rssimp_published']),
+						//start => '';
+						//stop => '';
+						//tags => '';
+						'rssimp_guid' => $this->_notempty($oResultItem->sGuid),
+						'rssimp_link' => $this->_notempty($oResultItem->sLink),
+					);
+				} 
+				if(isset($aSet))
+					$this->_writeSingleItem($aSet, $aRssImportRow);
+				else
+					return false;
+			} // endforeach $arSimplePieItems
+		}
 		
 		$sLog = "";
 		$this->log($sPartForLog.' '.
 					'Rss/Atom-Items found:' . $this->_iStatsItemsRead. ' '. 
-					'new:' . $this->_iSatsItemsInserted. ' '. 
+					'new:' . $this->_iStatsItemsInserted. ' '. 
 					'updated:' . $this->_iStatsItemsUpdated. ' '. 
 					'Url:'. $aRssImportRow['rssimp_impurl'],
 					'Rssimport->_writefeed', TL_GENERAL);
@@ -387,7 +450,7 @@ class RssImport extends Backend
 									->execute($sGuid,$iPid);
 		if ($oResult->numRows < 1)     	 // Beitrag existiert noch nicht => sql insert
 		{
-			$this->_iSatsItemsInserted+=1;
+			$this->_iStatsItemsInserted += 1;
 			// neuen Beitrag einfuegen
 			$oResult = $this->Database->prepare("INSERT INTO $this->_sTable %s")->set($aSet)->execute();
 			$iNewsId= $oResult->insertId;				// hole last_insert_id
@@ -399,24 +462,24 @@ class RssImport extends Backend
 			
 			// lokale Kopie für enclosures (images) bereitstellen 
 			$this->_makeLocal($aSet, $iNewsId, $aRssImportRow);
-			
+
 			// update tl_news
 			$this->Database->prepare("UPDATE $this->_sTable %s WHERE id=? ")->set($aSet)->execute($iNewsId);
 		}
 		else						  	 	// Beitrag existiert, ist aber aktueller => sql update 
-		{ 
+		{
 			$oRow = $oResult->fetchAssoc(); // lies ersten Datensatz
 			$iNewsId = $oRow['id'];			// lies id (DS mit selber guid wie Beitrag)
-			$iTlDate = ($oRow['tstamp'] > $oRow['date'])? $oRow['tstamp']: $oRow['date'];     // lies update-Datum 
-			if ($iTlDate<$iItemDate)		// Beitrag ist aktueller?
+			$iTlDate = ($oRow['tstamp'] > $oRow['date']) ? $oRow['tstamp'] : $oRow['date'];     // lies update-Datum 
+			if ($iTlDate < $iItemDate)		// Beitrag ist aktueller?
 			{
-				$this->_iStatsItemsUpdated+=1;
+				$this->_iStatsItemsUpdated += 1;
 				// alte lokale Kopie fuer enclosures (images) loeschen, wenn vorhanden 
-				if (strlen($oRow['singleSRC'])> 1)
+				if (strlen($oRow['singleSRC']) > 1)
 					unlink (TL_ROOT . '/' . $oRow[singleSRC]);
 
 				// lokale Kopie fuer enclosures (images) bereitstellen 
-				if (strlen($aSet['imageUrl']) >1)
+				if (strlen($aSet['imageUrl']) > 1)
 				$this->_makeLocal($aSet, $iNewsId, $aRssImportRow);
 				// update ausfuehren
 				$this->Database->prepare("UPDATE $this->_sTable %s WHERE id=? ")->set($aSet)->execute($iNewsId);
@@ -433,9 +496,9 @@ class RssImport extends Backend
 	 */	
 	private function _makeLocal(&$aSet, $iItemId, $aArchiveRow)
 	{
-		if (strlen($aSet['imageUrl'])>1) 
+		if (strlen($aSet['imageUrl']) > 1) 
 		{
-			if ($sNewpath = $this->_storeLocal($aSet['imageUrl'], $aArchiveRow['rssimp_imgpath'], $iItemId))
+			if ($sNewpath = $this->_storeLocal($aSet['imageUrl'], $aArchiveRow['path'], $iItemId))
 			{
 				$aSet['imageUrl']=  ''; 				// put local link to singleSRC, delete imageUrl   
 				$aSet['singleSRC']= $sNewpath;
@@ -462,11 +525,11 @@ class RssImport extends Backend
 		
 		// Positivliste für Datei-Extensions
 		$sAllowedSuffixes = $GLOBALS['TL_CONFIG']['allowedDownload'];
-		
+				
 		if ( strlen($sExtUrl)== 0) 		// Leerstring als ext. URL ist sinnlos
 			$this->_sMakeLocalErrorWarning .= ' empty URL not allowed';
 			
-		if (strlen($sLocalPath)<2) 		// dulde keinen Leerstring als Basispfad
+		if (strlen($sLocalPath) < 2) 		// dulde keinen Leerstring als Basispfad
 			$this->_sMakeLocalErrorWarning .= ' empty basepath for downloads not allowed';
 			
 		// bastele lokalen Dateinamen: sLocalPath + filename + _ + id + extension
@@ -476,6 +539,7 @@ class RssImport extends Backend
 		$sLocalFilename =  $sFilename .'_' . $iId . '.' . $arInfo['extension'];
 		$sLocalfile = $sLocalPath . '/' . $sFilename .'_' . $iId . '.' . $arInfo['extension'];
 		
+	
 		if (!in_array($arInfo['extension'], trimsplit(',', strtolower($sAllowedSuffixes))))
 			$this->_sMakeLocalErrorWarning .=' Suffix not supported ';
 
@@ -485,7 +549,9 @@ class RssImport extends Backend
 		if (file_exists(TL_ROOT .'/'. $sLocalfile))
 		   $this->_sMakeLocalErrorWarning .= ' output file alrady exists ';
 		
-		if (strlen($this->_sMakeLocalErrorWarning) != 0) {
+		if (strlen($this->_sMakeLocalErrorWarning) != 0) 
+		{
+			//die(var_dump($this->_sMakeLocalErrorWarning));
 			return NULL;		// Abbruch
 		}
 		 
@@ -509,13 +575,16 @@ class RssImport extends Backend
 		//write
 		try
 		{
-			@file_put_contents(TL_ROOT .'/'. $sLocalfile, $sData);
+			file_put_contents(TL_ROOT .'/'. $sLocalfile, $sData);
+			$objModel = \Dbafs::addResource($sLocalfile);
 		}
 		catch(Exception $oException) 
 		{
 			$this->_sMakeLocalErrorWarning .= ' could not write file(' .$oException->getMessage(). ')';   
 			return NULL;		// Abbruch
 		}
-		return $sLocalfile;	// Erfolg
+		
+		return $objModel->uuid ;	// Erfolg
+		//return $sLocalfile;	// Erfolg
 	}
 }

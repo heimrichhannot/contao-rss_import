@@ -61,6 +61,7 @@ class FeedChannelFps
 	{
 		$oSimplePie = new SimplePie();
 		$oSimplePie->set_feed_url($sUrl);
+		$oSimplePie->force_feed(true);
 		
 		// Simple Pie: Html-Attribut class erlauben
 		$aAttributes = $oSimplePie->strip_attributes;
@@ -77,9 +78,9 @@ class FeedChannelFps
 		if (!$oSimplePie->init()) 
 		{
 			$this->sError = 'fail:' . $oSimplePie->error();	// kein Ergebnis 
+			//throw new \Exception($this->sError);
 			return false;
 		} 
-		
 		$oSimplePie->handle_content_type();
 		
 		$this->sTitle = $oSimplePie->get_title();
@@ -98,7 +99,6 @@ class FeedChannelFps
 			
 		//parse items
 		$arSimplePieItems = $oSimplePie->get_items();
-		
 		for ($i=0; $i<count($arSimplePieItems); $i++)
 		{
 			$oRssFeedItem = new ObjFeedItemFps();
@@ -141,31 +141,57 @@ class FeedChannelFps
 				$oRssFeedItem->sAuthorName = $arSimplePieItems[$i]->get_author()->name;
 				
 			// Add enclosure
-			if($arSimplePieItems[$i]->get_enclosures())
-			foreach ($arSimplePieItems[$i]->get_enclosures() as $oEnclosure)
+			$aItemsEnclosures = $arSimplePieItems[$i]->get_enclosures();
+			if($aItemsEnclosures)
 			{
-			    if ($oEnclosure->get_link() && $oEnclosure->get_type())
-			  	{
-			  		$sType = "oDownload";
-			  		if (strpos(strtolower($oEnclosure->get_type()), 'image') !== false)
-			  		{
-			  			$sType = "oImage";
-			  		}
-			    	if (!isset($oRssFeedItem->$sType))
-			    	{
-			    		$oImgEnclosure = new ObjFeedEnclosureFps();
-			  			$oImgEnclosure->sLink = $oEnclosure->get_link();
-			  			$oImgEnclosure->sTitle = $oEnclosure->get_title();
-			  			$oImgEnclosure->sDescription = $oEnclosure->get_description();
-			  			$oImgEnclosure->iLength = $oEnclosure->get_length();
-			  			$oImgEnclosure->iWidth = $oEnclosure->get_width();
-			  			$oImgEnclosure->iHeight = $oEnclosure->get_height();
-			  			$oImgEnclosure->sType =  $oEnclosure->get_type();
-			  			
-			  			$oRssFeedItem->$sType = $oImgEnclosure;
-			    	}
-			  	} //endif
-		  	} //endforeach
+				$aEnclosures = array();
+
+				foreach ($aItemsEnclosures as $oEnclosure)
+				{
+					if ($oEnclosure->get_link() && $oEnclosure->get_type())
+					{
+						
+						$sType = "oDownload";
+						if (strpos(strtolower($oEnclosure->get_type()), 'image') !== false)
+						{
+							$sType = "oImage";
+						}
+						if (!isset($oRssFeedItem->$sType))
+						{
+							$oImgEnclosure = new ObjFeedEnclosureFps();
+							$oImgEnclosure->sLink = $oEnclosure->get_link();
+							$oImgEnclosure->sTitle = $oEnclosure->get_title();
+							$oImgEnclosure->sDescription = $oEnclosure->get_description();
+							$oImgEnclosure->iLength = $oEnclosure->get_length();
+							$oImgEnclosure->iWidth = $oEnclosure->get_width();
+							$oImgEnclosure->iHeight = $oEnclosure->get_height();
+							$oImgEnclosure->sType =  $oEnclosure->get_type();
+							
+							$oRssFeedItem->$sType = $oImgEnclosure;
+						}
+						
+						
+						/*
+						$sType = (strpos(strtolower($oEnclosure->get_type()), 'image') !== false) ? "oImage" : "oDownload";
+						
+						$oImgEnclosure = new ObjFeedEnclosureFps();
+						$oImgEnclosure->sLink = $oEnclosure->get_link();
+						$oImgEnclosure->sTitle = $oEnclosure->get_title();
+						$oImgEnclosure->sDescription = $oEnclosure->get_description();
+						$oImgEnclosure->iLength = $oEnclosure->get_length();
+						$oImgEnclosure->iWidth = $oEnclosure->get_width();
+						$oImgEnclosure->iHeight = $oEnclosure->get_height();
+						$oImgEnclosure->sType =  $oEnclosure->get_type();
+						
+						$aEnclosures[] = $oImgEnclosure;
+						*/
+						
+					} //endif
+				} //endforeach
+				
+				/*$oRssFeedItem->$aEnclosures = $aEnclosures;*/
+			}
+			
 		  	$this->arItems[$i] = $oRssFeedItem;
 		} // endfor
 		return true;	// Feed erfolgreich gelesen 

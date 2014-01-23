@@ -38,6 +38,8 @@ $this->loadLanguageFile('tl_news');
  * Table tl_news_archive 
  */
 
+$GLOBALS['TL_DCA']['tl_news_archive']['config']['ondelete_callback'][] = array('RssImport', 'deleteAttachments');
+
 // Palettes 
 
 $GLOBALS['TL_DCA']['tl_news_archive']['palettes']['default'] = 
@@ -52,7 +54,7 @@ $GLOBALS['TL_DCA']['tl_news_archive']['palettes']['__selector__'][]= 'rssimp_imp
 // Subpalettes 
 $GLOBALS['TL_DCA']['tl_news_archive']['subpalettes']['rssimp_imp']= 
 						    'rssimp_impurl, rssimp_imgpath, rssimp_published, rssimp_teaserhtml, 
-						    rssimp_allowedTags,rssimp_subtitlesrc,rssimp_author';
+						    rssimp_allowedTags, rssimp_subtitlesrc, rssimp_author';
 
 // Fields
 $tmpfields= array
@@ -81,8 +83,8 @@ $tmpfields= array
 			'label'                 => &$GLOBALS['TL_LANG']['tl_news_archive']['rssimp_imgpath'],
 			'exclude'               => true,
 			'inputType'             => 'fileTree',
-			'eval'                  => array('mandatory'=>true,'fieldType'=>'radio', 'path'=>''),
-			'sql'					=> "varchar(255) NOT NULL default ''",
+			'eval'                  => array('mandatory'=>true, 'fieldType'=>'radio', 'path'=>'files'),
+			'sql'                     => "binary(16) NULL"
 		), 
 
 		'rssimp_published' => array

@@ -38,6 +38,8 @@ $this->loadLanguageFile('tl_calendar_events');
  * Table tl_calendar 
  */
 
+$GLOBALS['TL_DCA']['tl_calendar']['config']['ondelete_callback'][] = array('RssImport', 'deleteAttachments');
+
 // Palettes 
 
 $GLOBALS['TL_DCA']['tl_calendar']['palettes']['default'] = 
@@ -80,8 +82,8 @@ $tmpfields= array
 			'label'                 => &$GLOBALS['TL_LANG']['tl_calendar']['rssimp_imgpath'],
 			'exclude'               => true,
 			'inputType'             => 'fileTree',
-			'eval'                  => array('mandatory'=>true,'fieldType'=>'radio', 'path'=>''),
-			'sql'					=> "varchar(255) NOT NULL default ''",
+			'eval'                  => array('mandatory'=>true, 'fieldType'=>'radio', 'path'=>'files'),
+			'sql'                     => "binary(16) NULL"
 		), 
 
 		'rssimp_published' => array
