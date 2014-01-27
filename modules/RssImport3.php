@@ -1,4 +1,4 @@
-<?php if (!defined('TL_ROOT')) die('You cannot access this file directly!');
+<?php
 
 /**
  * Contao Open Source CMS
@@ -10,42 +10,30 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation, either
  * version 3 of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this program. If not, please visit the Free
  * Software Foundation website at <http://www.gnu.org/licenses/>.
  *
  * PHP version 5
- * @copyright  2011 agentur fipps e.K. 
- * @author     Arne Borchert, Nikolaus Dulgeridis 
- * @package    RssImport 
- * @license    LGPL 
+ * @copyright  2011 agentur fipps e.K.
+ * @author     Arne Borchert, Nikolaus Dulgeridis
+ * @package    RssImport3
+ * @license    LGPL
  * @filesource
  */
 
-/**
- * Include SimplePie classes
- */
-// require_once(TL_ROOT . '/plugins/simplepie/simplepie.inc');
-// if (!class_exists('idna_convert', false))
-// {
-	// if ( version_compare(VERSION, "2.11", "<" ))
-		// require_once(TL_ROOT . '/plugins/simplepie/idna_convert.class.php');
-	// else
-		// require_once(TL_ROOT . '/plugins/idna/idna_convert.class.php');
-// }
-
-require_once('RssImportClasses.php');
+namespace fipps\xRssImport;
 
 /**
- * Class RssImport 
+ * Class RssImport3
  */
-class RssImport extends Backend
+class RssImport3 extends \Backend
 {
 	private $_iStatsItemsRead;
 	private $_iStatsItemsInserted;
@@ -56,16 +44,16 @@ class RssImport extends Backend
 	const TL_NEWS_ARCHIVE = 'tl_news_archive';
 	const TL_EVENTS = 'tl_calendar_events';
 	const TL_CALENDAR = 'tl_calendar';
-		
+
 	/**
-	 * Import all new designated feeds for news, could periodically be called by a Cron-Job   
-	 * 
-	 */	
+	 * Import all new designated feeds for news, could periodically be called by a Cron-Job
+	 *
+	 */
 	public function importAllNewsFeeds()
 	{
 		$this->_sTable = self::TL_NEWS;
 		$aNewsArchives= $this->_fetchDatasForFeedimport();
-		
+
 		if(is_array($aNewsArchives))
 		{
 			foreach ($aNewsArchives as $aNewsArchiveRow) // Für alle Archive
@@ -74,11 +62,11 @@ class RssImport extends Backend
 			}
 		}
 	}
-	
+
 	/**
-	 * Import all new designated feeds for events, could periodically be called by a Cron-Job   
-	 * 
-	 */	
+	 * Import all new designated feeds for events, could periodically be called by a Cron-Job
+	 *
+	 */
 	public function importAllEventFeeds()
 	{
 		$this->_sTable = 'tl_calendar_events';
@@ -86,34 +74,34 @@ class RssImport extends Backend
 		if(is_array($aNewsArchives))
 		{
 			foreach ($aNewsArchives as $aNewsArchiveRow) // Für alle Archive
-			{	
+			{
 					$this->_writeFeed($aNewsArchiveRow);
 			}
 		}
 	}
-	
+
 	/**
-	 * Callback-Function for updating a specific newsfeed 
-	 *   
+	 * Callback-Function for updating a specific newsfeed
+	 *
 	 * @param Datacontainer $dc
-	 */	
-	public function importNewFeeds(Datacontainer $dc)
+	 */
+	public function importNewFeeds(\Datacontainer $dc)
 	{
 		$this->_sTable = $dc->table;
-		
+
 		/*
 		if ( $this->_sTable == self::TL_NEWS )
 			$sql = "SELECT * FROM tl_news_archive WHERE id=? AND rssimp_imp = ?";
 		elseif ( $this->_sTable == self::TL_EVENTS )
 			$sql = "SELECT * FROM tl_calendar WHERE id=? AND rssimp_imp = ?";
 		*/
-		
+
 		$sTable = ($this->_sTable == self::TL_NEWS) ? 'tl_news_archive' : 'tl_calendar';
-		
-		$sql = "SELECT $sTable.*, tl_files.path FROM $sTable"; 
+
+		$sql = "SELECT $sTable.*, tl_files.path FROM $sTable";
 		$sql .= " LEFT JOIN tl_files ON $sTable.rssimp_imgpath LIKE tl_files.uuid";
 		$sql .= " WHERE $sTable.id = ? AND $sTable.rssimp_imp = ?";
-		
+
 		if (isset($sql))
 		{
 			$oResult = $this->Database->prepare($sql)
@@ -125,16 +113,16 @@ class RssImport extends Backend
 			}
 		}
 	}
-	
+
 	/**
 	 * Callback Function for deleting attachments
-	 *   
+	 *
 	 * @param Datacontainer $dc
 	 */
-	public function deleteAttachments(Datacontainer $dc)
+	public function deleteAttachments(\Datacontainer $dc)
 	{
-		$this->_sTable = $dc->table; 
-		
+		$this->_sTable = $dc->table;
+
 		switch($this->_sTable)
 		{
 			case self::TL_NEWS_ARCHIVE :
@@ -158,7 +146,7 @@ class RssImport extends Backend
 				$sIdColumn = false;
 				break;
 		}
-		
+
 		$sql = "SELECT $sTable.id, tl_files.uuid AS uuid, tl_files.path FROM tl_files";
 			$sql .= " LEFT JOIN $sTable ON tl_files.uuid = $sTable.singleSRC";
 			$sql .= " WHERE $sTable.$sIdColumn = ?";
@@ -168,11 +156,11 @@ class RssImport extends Backend
 		{
 			$oResult = $this->Database->prepare($sql)
 										->execute($dc->id);
-				
+
 			if ($oResult->numRows > 0)
 			{
 				$aRows = $oResult->fetchAllAssoc();
-				
+
 				if(is_array($aRows))
 				{
 					foreach($aRows as $aRow)
@@ -187,17 +175,17 @@ class RssImport extends Backend
 			}
 		}
 	}
-	
+
 	private function _checkIfAttachmentIsUnused($id, $uuid, $sTable)
 	{
 		$sql = "SELECT id FROM $sTable WHERE id != ? AND HEX(singleSRC) = ?";
 		$oResult = $this->Database->prepare($sql)->execute($id, bin2hex($uuid));
 		return $oResult->numRows == 0;
 	}
-	
+
 	/**
 	 * generate a unique alias
-	 * 
+	 *
 	 * @param string $sHeadline
 	 * @param int $iId
 	 * @return string
@@ -208,37 +196,37 @@ class RssImport extends Backend
 		// Check if alias already exists
 		$oResult = $this->Database->prepare("SELECT id FROM $this->_sTable WHERE alias=? ")
 									->execute($sAlias);
-		
+
 		if ($oResult->numRows > 0)
 			$sAlias .= '-'.$iId;
-			
+
 		return $sAlias;
 	}
 
 	/**
-	 * simply returns an empty string if $value is not set  
-	 * 
+	 * simply returns an empty string if $value is not set
+	 *
 	 * @param  string $value
 	 * @return string
-	 */	
-	private function _notempty($value) 	
-	{ 
-		return isset($value)? $value: '';	
+	 */
+	private function _notempty($value)
+	{
+		return isset($value)? $value: '';
 	}
-	
+
 	/**
-	 * fetch from tl_news_archive all entries that import a feed   
-	 * 
+	 * fetch from tl_news_archive all entries that import a feed
+	 *
 	 * @return array
-	 */	
+	 */
 	private function _fetchDatasForFeedimport()
-	{	
+	{
 		$sTable = ($this->_sTable == self::TL_NEWS) ? 'tl_news_archive' : 'tl_calendar';
-		
-		$sql = "SELECT $sTable.*, tl_files.path FROM $sTable"; 
+
+		$sql = "SELECT $sTable.*, tl_files.path FROM $sTable";
 		$sql .= "LEFT JOIN tl_files ON rssimp_imgpath LIKE uuid";
 		$sql .= "WHERE rssimp_imp = ?";
-			
+
 		if(isset($sql))
 		{
 			$oResult= $this->Database->prepare($sql)
@@ -251,40 +239,40 @@ class RssImport extends Backend
 		}
 	  	return null;
 	}
-	
+
 	/**
-	 * write feed data for a single archive to tl_news 
-	 * 
+	 * write feed data for a single archive to tl_news
+	 *
 	 * @param array $aNewsArchiveRow
 	 * @return boolean
-	 */	
-	private function _writeFeed($aRssImportRow) 	
+	 */
+	private function _writeFeed($aRssImportRow)
 	{
 		if ( $this->_sTable == self::TL_NEWS )
 			$sPartForLog = "Update News, Archive ID: ".$aRssImportRow['id'];
 		elseif ( $this->_sTable == self::TL_EVENTS )
 			$sPartForLog = "Update Events, Calendar ID: ".$aRssImportRow['id'];
-		
+
 		//Url ist leer? => return
 		if (strlen(trim($aRssImportRow['rssimp_impurl'])) < 1)
 		{
-			$this->log($sPartForLog . " - Url is empty!", 'RssImport _writefeed', TL_GENERAL);			
+			$this->log($sPartForLog . " - Url is empty!", 'RssImport _writefeed', TL_GENERAL);
 			return false;
-		}  
-		// initialisiere Werte für Statistik 
-		$this->_iStatsItemsRead = $this->_iStatsItemsInserted = $this->_iStatsItemsUpdated = 0; 
+		}
+		// initialisiere Werte für Statistik
+		$this->_iStatsItemsRead = $this->_iStatsItemsInserted = $this->_iStatsItemsUpdated = 0;
 		// lese den Feed
 		$oFeed = new FeedChannelFps();
-		if (! $oFeed->getFeed($aRssImportRow['rssimp_impurl']) ) 
+		if (! $oFeed->getFeed($aRssImportRow['rssimp_impurl']) )
 		{
-			$this->log($sPartForLog . "Could not read Url (" . $aRssImportRow['rssimp_impurl'] . ") " . $oFeed->sError, 
+			$this->log($sPartForLog . "Could not read Url (" . $aRssImportRow['rssimp_impurl'] . ") " . $oFeed->sError,
 				'RssImport _writefeed', TL_ERROR);
 			return false; 			// Feed konnte nicht gelesen werden
 		}
 		$arSimplePieItems = $oFeed->arItems;
-				
+
 		// Für alle Beitraege ...
-		if ($arSimplePieItems) 
+		if ($arSimplePieItems)
 		{
 			foreach ($arSimplePieItems as $oResultItem)
 			{
@@ -292,8 +280,8 @@ class RssImport extends Backend
 				$this->_iStatsItemsRead += 1;
 
 				// hole erlaubte tags
-				$sAllowedTags = $aRssImportRow['rssimp_allowedTags']; 	
-				
+				$sAllowedTags = $aRssImportRow['rssimp_allowedTags'];
+
 				// hole subtitle
 				if ($aRssImportRow['rssimp_subtitlesrc'])
 				{
@@ -313,17 +301,17 @@ class RssImport extends Backend
 							$oResultItem->sSubtitle = '';
 					}
 				}
-				
+
 				// hole teaser
 				$teaser = $this->_notempty($oResultItem->sDescription);
-				// convert {space,t,n} to a single space 
-				$teaser = preg_replace('/\s+/', ' ', substr($teaser, 0, 4096)); 
-				// entferne tags 
-				if ($aRssImportRow['rssimp_teaserhtml'] < 1) 
+				// convert {space,t,n} to a single space
+				$teaser = preg_replace('/\s+/', ' ', substr($teaser, 0, 4096));
+				// entferne tags
+				if ($aRssImportRow['rssimp_teaserhtml'] < 1)
 					$teaser = strip_tags( html_entity_decode($teaser, ENT_NOQUOTES, $GLOBALS['TL_CONFIG']['characterSet']));
 				else
 					$teaser = strip_tags( html_entity_decode($teaser, ENT_NOQUOTES, $GLOBALS['TL_CONFIG']['characterSet']), $sAllowedTags);
-					
+
 				if ($this->_sTable == self::TL_NEWS)
 				{
 					//Prepare record for tl_news
@@ -340,7 +328,7 @@ class RssImport extends Backend
 						'subheadline' => $this->_notempty($oResultItem->sSubtitle),
 						'teaser' => $teaser,
 						//'text' => $this->_notempty(strip_tags($oResultItem->sContent, $sAllowedTags)),
-						'singleSRC'=> '', 
+						'singleSRC'=> '',
 						//alt
 						'addImage'=> isset($oResultItem->oImage),
 						'imagemargin' => $this->_notempty($aRssImportRow['imgdefaults_imgmargin']),
@@ -355,7 +343,7 @@ class RssImport extends Backend
 						//jumpTo => ''; //Weiterleitungsziel intern
 						//articleId => '';
 						'url' => $this->_notempty($oResultItem->sLink), // Weiterleitungsziel
-						//target 
+						//target
 						'cssClass' => $this->_notempty($aRssImportRow['expertdefaults_cssclass']),
 						//noComments => '';
 						//featured => '';
@@ -384,7 +372,7 @@ class RssImport extends Backend
 						//'subheadline' => $this->_notempty($oResultItem->sSubtitle),
 						'teaser' => $teaser,
 						//'details' => $this->_notempty(strip_tags($oResultItem->sContent, $sAllowedTags)),
-						'singleSRC'=> '', 
+						'singleSRC'=> '',
 						//alt
 						'addImage'=> isset($oResultItem->oImage),
 						'imagemargin' => $this->_notempty($aRssImportRow['imgdefaults_imgmargin']),
@@ -399,7 +387,7 @@ class RssImport extends Backend
 						//jumpTo => ''; //Weiterleitungsziel intern
 						//articleId => '';
 						'url' => $this->_notempty($oResultItem->sLink), // Weiterleitungsziel
-						//target 
+						//target
 						'cssClass' => $this->_notempty($aRssImportRow['expertdefaults_cssclass']),
 						//noComments => '';
 						//featured => '';
@@ -410,37 +398,37 @@ class RssImport extends Backend
 						'rssimp_guid' => $this->_notempty($oResultItem->sGuid),
 						'rssimp_link' => $this->_notempty($oResultItem->sLink),
 					);
-				} 
+				}
 				if(isset($aSet))
 					$this->_writeSingleItem($aSet, $aRssImportRow);
 				else
 					return false;
 			} // endforeach $arSimplePieItems
 		}
-		
+
 		$sLog = "";
 		$this->log($sPartForLog.' '.
-					'Rss/Atom-Items found:' . $this->_iStatsItemsRead. ' '. 
-					'new:' . $this->_iStatsItemsInserted. ' '. 
-					'updated:' . $this->_iStatsItemsUpdated. ' '. 
+					'Rss/Atom-Items found:' . $this->_iStatsItemsRead. ' '.
+					'new:' . $this->_iStatsItemsInserted. ' '.
+					'updated:' . $this->_iStatsItemsUpdated. ' '.
 					'Url:'. $aRssImportRow['rssimp_impurl'],
 					'Rssimport->_writefeed', TL_GENERAL);
-		return true;   
+		return true;
 	}
 
 	/**
-	 * write single feed item to tl_news 
-	 * 
+	 * write single feed item to tl_news
+	 *
 	 * @param array $aSet
 	 * @param array $aNewsArchiveRow
-	 */	
+	 */
 	private function _writeSingleItem($aSet, $aRssImportRow)
 	{
 		// Lese parent id
 		$iPid = $aRssImportRow['id'];
 
-		// Lese aktuelles Datum (Unix Timestamp) vom Beitrag	
-		$iItemDate = ($aSet['tstamp'] > $aSet['date'])? $aSet['tstamp']: $aSet['date']; 
+		// Lese aktuelles Datum (Unix Timestamp) vom Beitrag
+		$iItemDate = ($aSet['tstamp'] > $aSet['date'])? $aSet['tstamp']: $aSet['date'];
 
 		// Lese id von gelesenem Beitrag
 		$sGuid = $aSet['rssimp_guid'] ;
@@ -454,31 +442,31 @@ class RssImport extends Backend
 			// neuen Beitrag einfuegen
 			$oResult = $this->Database->prepare("INSERT INTO $this->_sTable %s")->set($aSet)->execute();
 			$iNewsId= $oResult->insertId;				// hole last_insert_id
-			
+
 			// Alias generieren
 			$aSet['alias'] = $this->_generateNewAlias($aSet['headline'], $iNewsId);
 			// (id hinzufügen)
 			$aSet['alias'] .= '-' . $iNewsId;
-			
-			// lokale Kopie für enclosures (images) bereitstellen 
+
+			// lokale Kopie für enclosures (images) bereitstellen
 			$this->_makeLocal($aSet, $iNewsId, $aRssImportRow);
 
 			// update tl_news
 			$this->Database->prepare("UPDATE $this->_sTable %s WHERE id=? ")->set($aSet)->execute($iNewsId);
 		}
-		else						  	 	// Beitrag existiert, ist aber aktueller => sql update 
+		else						  	 	// Beitrag existiert, ist aber aktueller => sql update
 		{
 			$oRow = $oResult->fetchAssoc(); // lies ersten Datensatz
 			$iNewsId = $oRow['id'];			// lies id (DS mit selber guid wie Beitrag)
-			$iTlDate = ($oRow['tstamp'] > $oRow['date']) ? $oRow['tstamp'] : $oRow['date'];     // lies update-Datum 
+			$iTlDate = ($oRow['tstamp'] > $oRow['date']) ? $oRow['tstamp'] : $oRow['date'];     // lies update-Datum
 			if ($iTlDate < $iItemDate)		// Beitrag ist aktueller?
 			{
 				$this->_iStatsItemsUpdated += 1;
-				// alte lokale Kopie fuer enclosures (images) loeschen, wenn vorhanden 
+				// alte lokale Kopie fuer enclosures (images) loeschen, wenn vorhanden
 				if (strlen($oRow['singleSRC']) > 1)
 					unlink (TL_ROOT . '/' . $oRow[singleSRC]);
 
-				// lokale Kopie fuer enclosures (images) bereitstellen 
+				// lokale Kopie fuer enclosures (images) bereitstellen
 				if (strlen($aSet['imageUrl']) > 1)
 				$this->_makeLocal($aSet, $iNewsId, $aRssImportRow);
 				// update ausfuehren
@@ -486,24 +474,24 @@ class RssImport extends Backend
 			}
 		}
 	}
-	
+
 	/**
 	 * generate local Url for images and download links (affects the fields imageUrl and singleSrc of tl_news)
-	 * 
+	 *
 	 * @param array $aSet
-	 * @param int $iItemId 
+	 * @param int $iItemId
 	 * @param array $aArchiveRow
-	 */	
+	 */
 	private function _makeLocal(&$aSet, $iItemId, $aArchiveRow)
 	{
-		if (strlen($aSet['imageUrl']) > 1) 
+		if (strlen($aSet['imageUrl']) > 1)
 		{
 			if ($sNewpath = $this->_storeLocal($aSet['imageUrl'], $aArchiveRow['path'], $iItemId))
 			{
-				$aSet['imageUrl']=  ''; 				// put local link to singleSRC, delete imageUrl   
+				$aSet['imageUrl']=  ''; 				// put local link to singleSRC, delete imageUrl
 				$aSet['singleSRC']= $sNewpath;
 			}
-			else 
+			else
 			{
 				$this->log('Warning, cannot make local copy of file(' .$aSet['imageUrl']. ') reason: ' .
 							$this->_sMakeLocalErrorWarning , 'RssImport->_makelocal', TL_ERROR);
@@ -512,78 +500,78 @@ class RssImport extends Backend
 	}
 
 	/**
-	 * provides archive with local copies of external download/image files 
-	 * @param string $sExtUrl 
-	 * @param string $sLocalPath 
+	 * provides archive with local copies of external download/image files
+	 * @param string $sExtUrl
+	 * @param string $sLocalPath
 	 * @param int $iId
 	 * @return string
 	 */
 	private function _storeLocal($sExtUrl, $sLocalPath, $iId)
 	{
-		// reset warning message 
+		// reset warning message
 		$this->_sMakeLocalErrorWarning = '';
-		
+
 		// Positivliste für Datei-Extensions
 		$sAllowedSuffixes = $GLOBALS['TL_CONFIG']['allowedDownload'];
-				
+
 		if ( strlen($sExtUrl)== 0) 		// Leerstring als ext. URL ist sinnlos
 			$this->_sMakeLocalErrorWarning .= ' empty URL not allowed';
-			
+
 		if (strlen($sLocalPath) < 2) 		// dulde keinen Leerstring als Basispfad
 			$this->_sMakeLocalErrorWarning .= ' empty basepath for downloads not allowed';
-			
+
 		// bastele lokalen Dateinamen: sLocalPath + filename + _ + id + extension
 		$arInfo = pathinfo($sExtUrl);
 		$arInfo['extension'] = strtolower($arInfo['extension']);					// hole suffix;
 		$sFilename =  standardize(basename($sExtUrl,'.'.$arInfo['extension'])); 	// hole dateinamen (ohne suffix)
 		$sLocalFilename =  $sFilename .'_' . $iId . '.' . $arInfo['extension'];
 		$sLocalfile = $sLocalPath . '/' . $sFilename .'_' . $iId . '.' . $arInfo['extension'];
-		
-	
+
+
 		if (!in_array($arInfo['extension'], trimsplit(',', strtolower($sAllowedSuffixes))))
 			$this->_sMakeLocalErrorWarning .=' Suffix not supported ';
 
 		if (strpos($sExtUrl, '?') !== false)
 		    $this->_sMakeLocalErrorWarning .= ' special char in url not allowed ('.$sExtUrl.')';
-		 
+
 		if (file_exists(TL_ROOT .'/'. $sLocalfile))
 		   $this->_sMakeLocalErrorWarning .= ' output file alrady exists ';
-		
-		if (strlen($this->_sMakeLocalErrorWarning) != 0) 
+
+		if (strlen($this->_sMakeLocalErrorWarning) != 0)
 		{
 			//die(var_dump($this->_sMakeLocalErrorWarning));
 			return NULL;		// Abbruch
 		}
-		 
+
 		//read
 		try
 		{
 			$sData = @file_get_contents($sExtUrl);
 		}
-		catch(Exception $oException) 
+		catch(Exception $oException)
 		{
-			$this->_sMakeLocalErrorWarning .= ' could not read from url(' .$oException->getMessage(). ')';   
+			$this->_sMakeLocalErrorWarning .= ' could not read from url(' .$oException->getMessage(). ')';
 			return NULL;		// Abbruch
 		}
 
-		if (strlen($sData)<= 0) 
-		{ 
+		if (strlen($sData)<= 0)
+		{
 			$this->_sMakeLocalErrorWarning .= ' no file data(' .$sExtUrl. ')';
 			return NULL;		// Abbruch
 		}
-		
+
 		//write
 		try
 		{
 			file_put_contents(TL_ROOT .'/'. $sLocalfile, $sData);
 			$objModel = \Dbafs::addResource($sLocalfile);
 		}
-		catch(Exception $oException) 
+		catch(Exception $oException)
 		{
-			$this->_sMakeLocalErrorWarning .= ' could not write file(' .$oException->getMessage(). ')';   
+			$this->_sMakeLocalErrorWarning .= ' could not write file(' .$oException->getMessage(). ')';
 			return NULL;		// Abbruch
 		}
-		
+
 		return $objModel->uuid ;	// Erfolg
 		//return $sLocalfile;	// Erfolg
 	}

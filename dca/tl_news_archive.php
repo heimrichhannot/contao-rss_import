@@ -10,21 +10,21 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation, either
  * version 3 of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this program. If not, please visit the Free
  * Software Foundation website at <http://www.gnu.org/licenses/>.
  *
  * PHP version 5
- * @copyright  2011 agentur fipps e.K. 
- * @author     Arne Borchert 
- * @package    RssImport
- * @license    LGPL 
+ * @copyright  2011 agentur fipps e.K.
+ * @author     Arne Borchert
+ * @package    RssImport3
+ * @license    LGPL
  * @filesource
  */
 
@@ -35,14 +35,14 @@ $this->loadLanguageFile('tl_content');
 $this->loadLanguageFile('tl_news');
 
 /**
- * Table tl_news_archive 
+ * Table tl_news_archive
  */
 
-$GLOBALS['TL_DCA']['tl_news_archive']['config']['ondelete_callback'][] = array('RssImport', 'deleteAttachments');
+$GLOBALS['TL_DCA']['tl_news_archive']['config']['ondelete_callback'][] = array('RssImport3', 'deleteAttachments');
 
-// Palettes 
+// Palettes
 
-$GLOBALS['TL_DCA']['tl_news_archive']['palettes']['default'] = 
+$GLOBALS['TL_DCA']['tl_news_archive']['palettes']['default'] =
 	str_replace('{protected_legend:hide}', '{rssimp_legend:hide},rssimp_imp;'.'{protected_legend:hide}', $GLOBALS['TL_DCA']['tl_news_archive']['palettes']['default']);
 
 
@@ -51,23 +51,23 @@ $GLOBALS['TL_DCA']['tl_news_archive']['palettes']['default'] =
 // Selectors
 $GLOBALS['TL_DCA']['tl_news_archive']['palettes']['__selector__'][]= 'rssimp_imp';
 
-// Subpalettes 
-$GLOBALS['TL_DCA']['tl_news_archive']['subpalettes']['rssimp_imp']= 
-						    'rssimp_impurl, rssimp_imgpath, rssimp_published, rssimp_teaserhtml, 
+// Subpalettes
+$GLOBALS['TL_DCA']['tl_news_archive']['subpalettes']['rssimp_imp']=
+						    'rssimp_impurl, rssimp_imgpath, rssimp_published, rssimp_teaserhtml,
 						    rssimp_allowedTags, rssimp_subtitlesrc, rssimp_author';
 
 // Fields
 $tmpfields= array
 	(
-       'rssimp_imp' => array 
-        ( 
+       'rssimp_imp' => array
+        (
 			'label'                 => &$GLOBALS['TL_LANG']['tl_news_archive']['rssimp_imp'],
             'inputType'             => 'checkbox',
-			'exclude'               => true,         
-            'default'               => '', 
-            'eval'                  => array('mandatory'=>false, 'isBoolean' => true, 'submitOnChange' => true), 
+			'exclude'               => true,
+            'default'               => '',
+            'eval'                  => array('mandatory'=>false, 'isBoolean' => true, 'submitOnChange' => true),
 			'sql'					=> "char(1) NOT NULL default ''",
-        ),		
+        ),
 
         'rssimp_impurl' => array
 		(
@@ -85,7 +85,7 @@ $tmpfields= array
 			'inputType'             => 'fileTree',
 			'eval'                  => array('mandatory'=>true, 'fieldType'=>'radio', 'path'=>'files'),
 			'sql'                     => "binary(16) NULL"
-		), 
+		),
 
 		'rssimp_published' => array
 		(
@@ -101,9 +101,9 @@ $tmpfields= array
 		'rssimp_subtitlesrc' => array
 		(
 			'label'                 => &$GLOBALS['TL_LANG']['tl_news_archive']['rssimp_subtitlesrc'],
-			'sorting'               => true, 
+			'sorting'               => true,
 			'inputType' 			=> 'select',
-			'exclude'               => true,		
+			'exclude'               => true,
 			'options' 				=> array('category'=>'category (rss, atom)', 'contributor'=>'contributor (atom)', 'rights'=>'rights (atom)'),
 			'eval'                  => array('mandatory'=>false, 'tl_class'=>'w50', 'includeBlankOption' => true),
 			'sql'					=> "varchar(64) NOT NULL default ''",
@@ -143,7 +143,7 @@ $tmpfields= array
 			'eval'                  => array('doNotCopy'=>true, 'mandatory'=>true, 'includeBlankOption'=>true, 'tl_class'=>'w50'),
 			'sql'					=> "int(10) unsigned NOT NULL default '0'",
 		),
-		
+
 );
 
 $GLOBALS['TL_DCA']['tl_news_archive']['fields']= array_merge($GLOBALS['TL_DCA']['tl_news_archive']['fields'],$tmpfields);
