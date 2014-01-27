@@ -1,46 +1,36 @@
-<?php if (!defined('TL_ROOT')) die('You cannot access this file directly!');
+<?php
 
 /**
- * Contao Open Source CMS
- * Copyright (C) 2005-2011 Leo Feyer
+ * xRssImport3
  *
- * Formerly known as TYPOlight Open Source CMS.
+ * Language file for modules (de)
  *
- * This program is free software: you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation, either
- * version 3 of the License, or (at your option) any later version.
+ * Copyright (c) 2011, 2014 agentur fipps e.K
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program. If not, please visit the Free
- * Software Foundation website at <http://www.gnu.org/licenses/>.
- *
- * PHP version 5
- * @copyright  2011 agentur fipps e.K.
- * @author     Arne Borchert
- * @package    RssImport3
- * @license    LGPL
- * @filesource
+ * @copyright 2011, 2014 agentur fipps e.K.
+ * @author Arne Borchert
+ * @package fipps\xRssImport
+ * @license LGPL
  */
 
-
-/**
- * Table tl_news
- */
-
-$GLOBALS['TL_DCA']['tl_news']['config']['ondelete_callback'][] = array('RssImport3', 'deleteAttachments');
-$GLOBALS['TL_DCA']['tl_news']['config']['onload_callback'][] = 	array('RssImport3', 'importNewFeeds');
+// Table tl_news
+$GLOBALS['TL_DCA']['tl_news']['config']['ondelete_callback'][] = array(
+                                                                    'RssImport3',
+                                                                    'deleteAttachments'
+);
+$GLOBALS['TL_DCA']['tl_news']['config']['onload_callback'][] = array(
+                                                                    'RssImport3',
+                                                                    'importNewFeeds'
+);
 
 // Fields
-$tmpfields= array
-	(
-       'rssimp_guid' => array ('sql' => "mediumtext NULL"),
-	   'rssimp_link' => array ('sql' => "mediumtext NULL"),
-	);
+$tmpfields = array(
+                'rssimp_guid' => array(
+                                    'sql' => "mediumtext NULL"
+                ),
+                'rssimp_link' => array(
+                                    'sql' => "mediumtext NULL"
+                )
+);
 
-$GLOBALS['TL_DCA']['tl_news']['fields']= array_merge($GLOBALS['TL_DCA']['tl_news']['fields'],$tmpfields);
+$GLOBALS['TL_DCA']['tl_news']['fields'] = array_merge($GLOBALS['TL_DCA']['tl_news']['fields'], $tmpfields);
