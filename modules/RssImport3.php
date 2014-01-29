@@ -297,7 +297,9 @@ class RssImport3 extends \Backend
                                 'cssClass' => $this->_notempty($aRssImportRow['expertdefaults_cssclass']),
                                 'published' => $this->_notempty($aRssImportRow['rssimp_published']),
                                 'rssimp_guid' => $this->_notempty($oResultItem->sGuid),
-                                'rssimp_link' => $this->_notempty($oResultItem->sLink)
+                                'rssimp_link' => $this->_notempty($oResultItem->sLink),
+								'source' => $this->_notempty($aRssImportRow['rssimp_source']),
+								'target' => $this->_notempty($aRssImportRow['rssimp_target'])
                     );
                 } elseif ($this->_sTable == self::TL_EVENTS) {
                     // Prepare record for tl_calendar_events
@@ -325,7 +327,9 @@ class RssImport3 extends \Backend
                                 'cssClass' => $this->_notempty($aRssImportRow['expertdefaults_cssclass']),
                                 'published' => $this->_notempty($aRssImportRow['rssimp_published']),
                                 'rssimp_guid' => $this->_notempty($oResultItem->sGuid),
-                                'rssimp_link' => $this->_notempty($oResultItem->sLink)
+                                'rssimp_link' => $this->_notempty($oResultItem->sLink),
+								'source' => $this->_notempty($aRssImportRow['rssimp_source']),
+								'target' => $this->_notempty($aRssImportRow['rssimp_target'])
                     );
                 }
                 if (isset($aSet))
