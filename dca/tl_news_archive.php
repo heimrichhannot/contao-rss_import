@@ -24,15 +24,24 @@ $GLOBALS['TL_DCA']['tl_news_archive']['config']['ondelete_callback'][] = array(
 // Palettes
 $GLOBALS['TL_DCA']['tl_news_archive']['palettes']['default'] = str_replace(
                                                                         '{protected_legend:hide}',
-                                                                        '{rssimp_legend:hide},rssimp_imp;' . '{protected_legend:hide}',
+                                                                        '{rssimp_legend:hide},rssimp_imp; {protected_legend:hide}',
                                                                         $GLOBALS['TL_DCA']['tl_news_archive']['palettes']['default']);
 
 // Selectors
-$GLOBALS['TL_DCA']['tl_news_archive']['palettes']['__selector__'][] = 'rssimp_imp';
+$GLOBALS['TL_DCA']['tl_news_archive']['palettes']['__selector__'] = array('rssimp_imp', 'rssimp_source');
 
 // Subpalettes
+$GLOBALS['TL_DCA']['tl_news_archive']['subpalettes'] =array( 
+		'rssimp_imp' 		=> 'rssimp_impurl, rssimp_imgpath, rssimp_published, rssimp_teaserhtml, rssimp_allowedTags, rssimp_subtitlesrc, rssimp_author, rssimp_source, rssimp_target',
+);
+/*
 $GLOBALS['TL_DCA']['tl_news_archive']['subpalettes']['rssimp_imp'] = 'rssimp_impurl, rssimp_imgpath, rssimp_published, rssimp_teaserhtml,
-						    rssimp_allowedTags, rssimp_subtitlesrc, rssimp_author';
+						    rssimp_allowedTags, rssimp_subtitlesrc, rssimp_author, rssimp_source';
+							
+$GLOBALS['TL_DCA']['tl_news_archive']['subpalettes']['rssimp_source'] = 'rssimp_jumpTo';
+*/
+
+
 
 // Fields
 $tmpfields = array(
@@ -148,7 +157,33 @@ $tmpfields = array(
                                                         'tl_class' => 'w50'
                                         ),
                                         'sql' => "int(10) unsigned NOT NULL default '0'"
-                )
+                ),
+				
+//Weiterleitungsziel
+
+				'rssimp_source' => array
+				(
+					'label'                   => &$GLOBALS['TL_LANG']['tl_news']['source'],
+					'default'                 => 'external',
+					'exclude'                 => true,
+					'filter'                  => true,
+					'inputType'               => 'radio',
+					'options_callback'        => array('tl_news_archive', 'getSourceOptions'),
+					'reference'               => &$GLOBALS['TL_LANG']['tl_news'],
+					'eval'                    => array('submitOnChange'=>true, 'helpwizard'=>true,  'tl_class'=>'long, clr'),
+					'sql'                     => "varchar(12) NOT NULL default ''"
+				),
+
+				
+				'rssimp_target' => array
+				(
+					'label'                   => &$GLOBALS['TL_LANG']['MSC']['target'],
+					'default'                 => '1',
+					'exclude'                 => true,
+					'inputType'               => 'checkbox',
+					'eval'                    => array('tl_class'=>'w50 m12'),
+					'sql'                     => "char(1) NOT NULL default ''"
+				)
 )
 ;
 
