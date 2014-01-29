@@ -102,7 +102,7 @@ class FeedChannelFps
 
         // Add updated
         if ($arUpdated = $oSimplePie->get_feed_tags(SIMPLEPIE_NAMESPACE_ATOM_10, 'updated')) {
-            $oDate = new DateTime($arUpdated[0]['data']);
+            $oDate = new \DateTime($arUpdated[0]['data']);
             $this->id = $oDate->format('U');
         }
 
@@ -135,7 +135,7 @@ class FeedChannelFps
              // Add date
             $oRssFeedItem->iPublished = $arSimplePieItems[$i]->get_date('U');
             if ($arUpdated = $arSimplePieItems[$i]->get_item_tags(SIMPLEPIE_NAMESPACE_ATOM_10, 'updated')) {
-                $oDate = new DateTime($arUpdated[0]['data']);
+                $oDate = new \DateTime($arUpdated[0]['data']);
                 $oRssFeedItem->iUpdated = (int) $oDate->format('U');
             } else
                 $oRssFeedItem->iUpdated = $this->arItems[$i]->iPublished;
