@@ -298,8 +298,8 @@ class RssImport3 extends \Backend
                                 'published' => $this->_notempty($aRssImportRow['rssimp_published']),
                                 'rssimp_guid' => $this->_notempty($oResultItem->sGuid),
                                 'rssimp_link' => $this->_notempty($oResultItem->sLink),
-								'source' => $this->_notempty($aRssImportRow['rssimp_source']),
-								'target' => $this->_notempty($aRssImportRow['rssimp_target'])
+                                'source' => $this->_notempty($aRssImportRow['rssimp_source']),
+                                'target' => $this->_notempty($aRssImportRow['rssimp_target'])
                     );
                 } elseif ($this->_sTable == self::TL_EVENTS) {
                     // Prepare record for tl_calendar_events
@@ -328,8 +328,8 @@ class RssImport3 extends \Backend
                                 'published' => $this->_notempty($aRssImportRow['rssimp_published']),
                                 'rssimp_guid' => $this->_notempty($oResultItem->sGuid),
                                 'rssimp_link' => $this->_notempty($oResultItem->sLink),
-								'source' => $this->_notempty($aRssImportRow['rssimp_source']),
-								'target' => $this->_notempty($aRssImportRow['rssimp_target'])
+                                'source' => $this->_notempty($aRssImportRow['rssimp_source']),
+                                'target' => $this->_notempty($aRssImportRow['rssimp_target'])
                     );
                 }
                 if (isset($aSet))
@@ -413,10 +413,10 @@ class RssImport3 extends \Backend
                 if (strlen($oRow['singleSRC']) > 1)
                     unlink(TL_ROOT . '/' . $oRow[singleSRC]);
 
-                    // lokale Kopie fuer enclosures (images) bereitstellen
+                // lokale Kopie fuer enclosures (images) bereitstellen
                 if (strlen($aSet['imageUrl']) > 1)
                     $this->_makeLocal($aSet, $iNewsId, $aRssImportRow);
-                    // update ausfuehren
+                // update ausfuehren
                 $this->Database->prepare("UPDATE $this->_sTable %s WHERE id=? ")
                     ->set($aSet)
                     ->execute($iNewsId);
@@ -469,7 +469,7 @@ class RssImport3 extends \Backend
         if (strlen($sLocalPath) < 2) // dulde keinen Leerstring als Basispfad
             $this->_sMakeLocalErrorWarning .= ' empty basepath for downloads not allowed';
 
-            // setze lokalen Dateinamen: sLocalPath + filename + _ + id + extension
+        // setze lokalen Dateinamen: sLocalPath + filename + _ + id + extension
         $arInfo = pathinfo($sExtUrl);
         $arInfo['extension'] = strtolower($arInfo['extension']); // hole suffix;
         $sFilename = standardize(basename($sExtUrl, '.' . $arInfo['extension'])); // hole dateinamen

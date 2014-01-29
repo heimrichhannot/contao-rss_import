@@ -57,7 +57,6 @@ class ObjFeedEnclosureFps
  * read a Rss/Atom feed channel
  *
  * @author Arne Borchert, Nikolaus Dulgeridis
- *
  */
 class FeedChannelFps
 {
@@ -128,11 +127,13 @@ class FeedChannelFps
             $oRssFeedItem->sCopyright = $arSimplePieItems[$i]->get_copyright();
 
             // get source tag
-            if (($arSource = $arSimplePieItems[$i]->get_item_tags(SIMPLEPIE_NAMESPACE_RSS_20,'source')) ||
+            if (($arSource = $arSimplePieItems[$i]->get_item_tags(
+                                                                                                                                                            SIMPLEPIE_NAMESPACE_RSS_20,
+                                                                                                                                                            'source')) ||
                  ($arSource = $arSimplePieItems[$i]->get_item_tags(SIMPLEPIE_NAMESPACE_ATOM_10, 'source')))
                 $oRssFeedItem->sSource = $arSource[0]['data'];
 
-             // Add date
+            // Add date
             $oRssFeedItem->iPublished = $arSimplePieItems[$i]->get_date('U');
             if ($arUpdated = $arSimplePieItems[$i]->get_item_tags(SIMPLEPIE_NAMESPACE_ATOM_10, 'updated')) {
                 $oDate = new \DateTime($arUpdated[0]['data']);
@@ -172,11 +173,9 @@ class FeedChannelFps
 
                             $oRssFeedItem->$sType = $oImgEnclosure;
                         }
-
                     } // endif
                 } // endforeach
 
-                /* $oRssFeedItem->$aEnclosures = $aEnclosures; */
             }
 
             $this->arItems[$i] = $oRssFeedItem;

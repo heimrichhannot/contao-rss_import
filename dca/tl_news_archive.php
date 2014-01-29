@@ -37,12 +37,6 @@ $GLOBALS['TL_DCA']['tl_news_archive']['palettes']['__selector__'] = array(
 $GLOBALS['TL_DCA']['tl_news_archive']['subpalettes'] = array(
                                                             'rssimp_imp' => 'rssimp_impurl, rssimp_imgpath, rssimp_published, rssimp_teaserhtml, rssimp_allowedTags, rssimp_subtitlesrc, rssimp_author, rssimp_source, rssimp_target'
 );
-/*
- * $GLOBALS['TL_DCA']['tl_news_archive']['subpalettes']['rssimp_imp'] = 'rssimp_impurl,
- * rssimp_imgpath, rssimp_published, rssimp_teaserhtml, rssimp_allowedTags, rssimp_subtitlesrc,
- * rssimp_author, rssimp_source';
- * $GLOBALS['TL_DCA']['tl_news_archive']['subpalettes']['rssimp_source'] = 'rssimp_jumpTo';
- */
 
 // Fields
 $tmpfields = array(
@@ -160,15 +154,16 @@ $tmpfields = array(
                                         'sql' => "int(10) unsigned NOT NULL default '0'"
                 ),
 
-                // Weiterleitungsziel
-
                 'rssimp_source' => array(
                                         'label' => &$GLOBALS['TL_LANG']['tl_news']['source'],
                                         'default' => 'external',
                                         'exclude' => true,
                                         'filter' => true,
                                         'inputType' => 'radio',
-                                        'options' =>  array('default','external'),
+                                        'options' => array(
+                                                        'default',
+                                                        'external'
+                                        ),
                                         'reference' => &$GLOBALS['TL_LANG']['tl_news'],
                                         'eval' => array(
                                                         'submitOnChange' => true,
