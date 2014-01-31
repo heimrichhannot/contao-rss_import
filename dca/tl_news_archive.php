@@ -35,7 +35,19 @@ $GLOBALS['TL_DCA']['tl_news_archive']['palettes']['__selector__'] = array(
 
 // Subpalettes
 $GLOBALS['TL_DCA']['tl_news_archive']['subpalettes'] = array(
-                                                            'rssimp_imp' => 'rssimp_impurl, rssimp_imgpath, rssimp_published, rssimp_teaserhtml, rssimp_allowedTags, rssimp_subtitlesrc, rssimp_author, rssimp_source, rssimp_target'
+                                                            'rssimp_imp' => 'rssimp_impurl,
+                                                                                rssimp_imgpath,
+                                                                                rssimp_size,
+                                                                                rssimp_imagemargin,
+                                                                                rssimp_fullsize,
+                                                                                rssimp_floating,
+                                                                                rssimp_published,
+                                                                                rssimp_teaserhtml,
+                                                                                rssimp_allowedTags,
+                                                                                rssimp_subtitlesrc,
+                                                                                rssimp_author,
+                                                                                rssimp_source,
+                                                                                rssimp_target'
 );
 
 // Fields
@@ -78,6 +90,69 @@ $tmpfields = array(
                                         'sql' => "binary(16) NULL"
                 ),
 
+                'rssimp_size' => array(
+                                'label' => &$GLOBALS['TL_LANG']['tl_content']['size'],
+                                'exclude' => true,
+                                'inputType' => 'imageSize',
+                                'options' => $GLOBALS['TL_CROP'],
+                                'reference' => &$GLOBALS['TL_LANG']['MSC'],
+                                'eval' => array(
+                                                'rgxp' => 'digit',
+                                                'nospace' => true,
+                                                'helpwizard' => true,
+                                                'tl_class' => 'w50'
+                                ),
+                                'sql' => "varchar(64) NOT NULL default ''"
+                ),
+                'rssimp_imagemargin' => array(
+                                    'label' => &$GLOBALS['TL_LANG']['tl_content']['imagemargin'],
+                                    'exclude' => true,
+                                    'inputType' => 'trbl',
+                                    'options' => array(
+                                                    'px',
+                                                    '%',
+                                                    'em',
+                                                    'rem',
+                                                    'ex',
+                                                    'pt',
+                                                    'pc',
+                                                    'in',
+                                                    'cm',
+                                                    'mm'
+                                    ),
+                                    'eval' => array(
+                                                    'includeBlankOption' => true,
+                                                    'tl_class' => 'w50'
+                                    ),
+                                    'sql' => "varchar(128) NOT NULL default ''"
+                ),
+                'rssimp_fullsize' => array(
+                                    'label' => &$GLOBALS['TL_LANG']['tl_content']['fullsize'],
+                                    'exclude' => true,
+                                    'inputType' => 'checkbox',
+                                    'eval' => array(
+                                                    'tl_class' => 'w50 m12'
+                                    ),
+                                    'sql' => "char(1) NOT NULL default ''"
+                ),
+                'rssimp_floating' => array(
+                                    'label' => &$GLOBALS['TL_LANG']['tl_content']['floating'],
+                                    'default' => 'above',
+                                    'exclude' => true,
+                                    'inputType' => 'radioTable',
+                                    'options' => array(
+                                                    'above',
+                                                    'left',
+                                                    'right',
+                                                    'below'
+                                    ),
+                                    'eval' => array(
+                                                    'cols' => 4,
+                                                    'tl_class' => 'w50'
+                                    ),
+                                    'reference' => &$GLOBALS['TL_LANG']['MSC'],
+                                    'sql' => "varchar(12) NOT NULL default ''"
+                ),
                 'rssimp_published' => array(
                                             'label' => &$GLOBALS['TL_LANG']['tl_news_archive']['rssimp_published'],
                                             'exclude' => true,
@@ -86,7 +161,7 @@ $tmpfields = array(
                                             'inputType' => 'checkbox',
                                             'eval' => array(
                                                             'doNotCopy' => true,
-                                                            'tl_class' => 'w50'
+                                                            'tl_class' => 'long'
                                             ),
                                             'sql' => "char(1) NOT NULL default ''"
                 ),
@@ -117,7 +192,7 @@ $tmpfields = array(
                                             'inputType' => 'checkbox',
                                             'eval' => array(
                                                             'doNotCopy' => true,
-                                                            'tl_class' => 'w50'
+                                                            'tl_class' => 'long'
                                             ),
                                             'sql' => "varchar(1) NOT NULL default ''"
                 ),
