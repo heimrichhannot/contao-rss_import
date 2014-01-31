@@ -1,4 +1,15 @@
-contao_xRssImport3
-==================
+# xRssImport3
 
-RSS Import für Contao ab 3.2.x
+RSS Nachrichten-Import für Contao ab 3.2.x
+
+
+## Hinweise
+
+1. Beisträge können nur gelöscht werden, wenn diese auch im Feed nicht mehr existieren, ansonsten werden sie wieder neu bezogen. Besser ist des, den Beitrag zu deaktivieren.
+1. Ein Import findet übder den Command-Scheduler jede Stunde statt. Darüber hinaus kann auch mit der cron-Erweiterung importiert werden. Dazu muss im Job als Pfad ``system/modules/xRssImport3/jobs/importAllNews.php`` eingetragen werden.
+1. Die Einbettung von Bildern funktioniert nur dann, wenn diese als Anlage (enclosure) mitgeliefert werden.
+
+
+## Release Notes
+
+31.01.2014 1.0.0 beta1
