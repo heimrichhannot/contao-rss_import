@@ -25,7 +25,7 @@ class RssImport3 extends \Backend
     private $_sTable;
     const TL_NEWS = 'tl_news';
     const TL_NEWS_ARCHIVE = 'tl_news_archive';
-    const TL_EVENTS = 'tl_calendar_events';
+    // const TL_EVENTS = 'tl_calendar_events';
     const TL_CALENDAR = 'tl_calendar';
 
     /**
@@ -44,21 +44,6 @@ class RssImport3 extends \Backend
         $this->_sTable = self::TL_NEWS;
         $aNewsArchives = $this->_fetchDatasForFeedimport();
 
-        if (is_array($aNewsArchives)) {
-            foreach ($aNewsArchives as $aNewsArchiveRow)             // Für alle Archive
-            {
-                $this->_writeFeed($aNewsArchiveRow);
-            }
-        }
-    }
-
-    /**
-     * Import all new designated feeds for events, could periodically be called by a Cron-Job
-     */
-    public function importAllEventFeeds()
-    {
-        $this->_sTable = 'tl_calendar_events';
-        $aNewsArchives = $this->_fetchDatasForFeedimport();
         if (is_array($aNewsArchives)) {
             foreach ($aNewsArchives as $aNewsArchiveRow)             // Für alle Archive
             {
@@ -106,16 +91,8 @@ class RssImport3 extends \Backend
                 $sTable = 'tl_news';
                 $sIdColumn = 'pid';
                 break;
-            case self::TL_CALENDAR:
-                $sTable = 'tl_calendar_events';
-                $sIdColumn = 'pid';
-                break;
             case self::TL_NEWS:
                 $sTable = 'tl_news';
-                $sIdColumn = 'id';
-                break;
-            case self::TL_EVENTS:
-                $sTable = 'tl_calendar_events';
                 $sIdColumn = 'id';
                 break;
             default:
@@ -221,10 +198,8 @@ class RssImport3 extends \Backend
     {
         if ($this->_sTable == self::TL_NEWS)
             $sPartForLog = "Update News, Archive ID: " . $aRssImportRow['id'];
-        elseif ($this->_sTable == self::TL_EVENTS)
-            $sPartForLog = "Update Events, Calendar ID: " . $aRssImportRow['id'];
 
-            // Url ist leer? => return
+        // Url ist leer? => return
         if (strlen(trim($aRssImportRow['rssimp_impurl'])) < 1) {
             $this->log($sPartForLog . " - Url is empty!", 'RssImport _writefeed', TL_GENERAL);
             return false;
@@ -295,41 +270,11 @@ class RssImport3 extends \Backend
                                 'singleSRC' => '',
                                 // alt
                                 'addImage' => isset($oResultItem->oImage),
-                                'imagemargin' => $this->_notempty($aRssImportRow['imgdefaults_imgmargin']),
-                                'size' => $this->_notempty($aRssImportRow['imgdefaults_imgsize']),
-                                'fullsize' => $this->_notempty($aRssImportRow['imgdefaults_imgfullsize']),
+                                'imagemargin' => $this->_notempty($aRssImportRow['rssimp_imagemargin']),
+                                'size' => $this->_notempty($aRssImportRow['rssimp_size']),
+                                'fullsize' => $this->_notempty($aRssImportRow['rssimp_fullsize']),
                                 'imageUrl' => $this->_notempty($oResultItem->oImage->sLink),
-                                'floating' => $this->_notempty($aRssImportRow['imgdefaults_imgfloating']),
-                                'source' => 'default',
-                                'url' => $this->_notempty($oResultItem->sLink),  // Weiterleitungsziel
-                                'cssClass' => $this->_notempty($aRssImportRow['expertdefaults_cssclass']),
-                                'published' => $this->_notempty($aRssImportRow['rssimp_published']),
-                                'rssimp_guid' => $this->_notempty($oResultItem->sGuid),
-                                'rssimp_link' => $this->_notempty($oResultItem->sLink),
-                                'source' => $this->_notempty($aRssImportRow['rssimp_source']),
-                                'target' => $this->_notempty($aRssImportRow['rssimp_target'])
-                    );
-                } elseif ($this->_sTable == self::TL_EVENTS) {
-                    // Prepare record for tl_calendar_events
-                    $aSet = array(
-                                // id => auto;
-                                'pid' => $this->_notempty($aRssImportRow['id']),
-                                'tstamp' => time(),
-                                'title' => $this->_notempty($oResultItem->sTitle),
-                                'alias' => '',
-                                'author' => $this->_notempty($aRssImportRow['rssimp_author']),
-                                'addTime' => '',
-                                'startDate' => $this->_notempty($oResultItem->iPublished),
-                                'startTime' => $this->_notempty($oResultItem->iPublished),
-                                'teaser' => $teaser,
-                                'singleSRC' => '',
-                                // alt
-                                'addImage' => isset($oResultItem->oImage),
-                                'imagemargin' => $this->_notempty($aRssImportRow['imgdefaults_imgmargin']),
-                                'size' => $this->_notempty($aRssImportRow['imgdefaults_imgsize']),
-                                'fullsize' => $this->_notempty($aRssImportRow['imgdefaults_imgfullsize']),
-                                'imageUrl' => $this->_notempty($oResultItem->oImage->sLink),
-                                'floating' => $this->_notempty($aRssImportRow['imgdefaults_imgfloating']),
+                                'floating' => $this->_notempty($aRssImportRow['rssimp_floating']),
                                 'source' => 'default',
                                 'url' => $this->_notempty($oResultItem->sLink),  // Weiterleitungsziel
                                 'cssClass' => $this->_notempty($aRssImportRow['expertdefaults_cssclass']),
