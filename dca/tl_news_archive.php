@@ -241,11 +241,9 @@ $tmpfields = array(
                                         ),
                                         'reference' => &$GLOBALS['TL_LANG']['tl_news'],
                                         'eval' => array(
-                                                        'submitOnChange' => true,
-                                                        'helpwizard' => true,
                                                         'tl_class' => 'long, clr'
                                         ),
-                                        'sql' => "varchar(12) NOT NULL default ''"
+                                        'sql' => "varchar(12) NOT NULL default 'external'"
                 ),
 
                 'rssimp_target' => array(

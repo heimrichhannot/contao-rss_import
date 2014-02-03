@@ -29,6 +29,14 @@ class RssImport3 extends \Backend
     const TL_CALENDAR = 'tl_calendar';
 
     /**
+     * Load the database object
+     */
+    public function __construct()
+    {
+        parent::__construct();
+    }
+
+    /**
      * Import all new designated feeds for news, could periodically be called by a Cron-Job
      */
     public function importAllNewsFeeds()
@@ -165,8 +173,8 @@ class RssImport3 extends \Backend
     {
         $sTable = ($this->_sTable == self::TL_NEWS) ? 'tl_news_archive' : 'tl_calendar';
 
-        $sql = "SELECT $sTable.*, tl_files.path FROM $sTable";
-        $sql .= "LEFT JOIN tl_files ON rssimp_imgpath LIKE uuid";
+        $sql = "SELECT $sTable.*, tl_files.path FROM $sTable ";
+        $sql .= "LEFT JOIN tl_files ON rssimp_imgpath LIKE uuid ";
         $sql .= "WHERE rssimp_imp = ?";
 
         if (isset($sql)) {
@@ -358,10 +366,10 @@ class RssImport3 extends \Backend
                 if (strlen($oRow['singleSRC']) > 1)
                     unlink(TL_ROOT . '/' . $oRow[singleSRC]);
 
-                // lokale Kopie fuer enclosures (images) bereitstellen
+                    // lokale Kopie fuer enclosures (images) bereitstellen
                 if (strlen($aSet['imageUrl']) > 1)
                     $this->_makeLocal($aSet, $iNewsId, $aRssImportRow);
-                // update ausfuehren
+                    // update ausfuehren
                 $this->Database->prepare("UPDATE $this->_sTable %s WHERE id=? ")
                     ->set($aSet)
                     ->execute($iNewsId);
@@ -414,7 +422,7 @@ class RssImport3 extends \Backend
         if (strlen($sLocalPath) < 2) // dulde keinen Leerstring als Basispfad
             $this->_sMakeLocalErrorWarning .= ' empty basepath for downloads not allowed';
 
-        // setze lokalen Dateinamen: sLocalPath + filename + _ + id + extension
+            // setze lokalen Dateinamen: sLocalPath + filename + _ + id + extension
         $arInfo = pathinfo($sExtUrl);
         $arInfo['extension'] = strtolower($arInfo['extension']); // hole suffix;
         $sFilename = standardize(basename($sExtUrl, '.' . $arInfo['extension'])); // hole dateinamen
