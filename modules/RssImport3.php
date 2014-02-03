@@ -25,16 +25,8 @@ class RssImport3 extends \Backend
     private $_sTable;
     const TL_NEWS = 'tl_news';
     const TL_NEWS_ARCHIVE = 'tl_news_archive';
-    // const TL_EVENTS = 'tl_calendar_events';
+    const TL_EVENTS = 'tl_calendar_events';
     const TL_CALENDAR = 'tl_calendar';
-
-    /**
-     * Load the database object
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     /**
      * Import all new designated feeds for news, could periodically be called by a Cron-Job
@@ -171,10 +163,10 @@ class RssImport3 extends \Backend
      */
     private function _fetchDatasForFeedimport()
     {
-        $sTable = ($this->_sTable == self::TL_NEWS) ? 'tl_news_archive' : 'tl_calendar';
-
-        $sql = "SELECT $sTable.*, tl_files.path FROM $sTable ";
-        $sql .= "LEFT JOIN tl_files ON rssimp_imgpath LIKE uuid ";
+        //$sTable = ($this->_sTable == self::TL_NEWS) ? self::TL_NEWS_ARCHIVE : self::TL_CALENDAR;
+        $sTable = self::TL_NEWS_ARCHIVE;
+        $sql = "SELECT $sTable.*, tl_files.path FROM $sTable";
+        $sql .= "LEFT JOIN tl_files ON rssimp_imgpath LIKE uuid";
         $sql .= "WHERE rssimp_imp = ?";
 
         if (isset($sql)) {
@@ -217,14 +209,14 @@ class RssImport3 extends \Backend
         }
         $arSimplePieItems = $oFeed->arItems;
 
+        // hole erlaubte tags
+        $sAllowedTags = $aRssImportRow['rssimp_allowedTags'];
+
         // Für alle Beiträge ...
         if ($arSimplePieItems) {
             foreach ($arSimplePieItems as $oResultItem) {
                 $aTmpArr[] = $oResultItem;
                 $this->_iStatsItemsRead += 1;
-
-                // hole erlaubte tags
-                $sAllowedTags = $aRssImportRow['rssimp_allowedTags'];
 
                 // hole subtitle
                 if ($aRssImportRow['rssimp_subtitlesrc']) {
@@ -268,7 +260,6 @@ class RssImport3 extends \Backend
                                 'subheadline' => $this->_notempty($oResultItem->sSubtitle),
                                 'teaser' => $teaser,
                                 'singleSRC' => '',
-                                // alt
                                 'addImage' => isset($oResultItem->oImage),
                                 'imagemargin' => $this->_notempty($aRssImportRow['rssimp_imagemargin']),
                                 'size' => $this->_notempty($aRssImportRow['rssimp_size']),
@@ -285,8 +276,11 @@ class RssImport3 extends \Backend
                                 'target' => $this->_notempty($aRssImportRow['rssimp_target'])
                     );
                 }
-                if (isset($aSet))
-                    $this->_writeSingleItem($aSet, $aRssImportRow);
+                if (isset($aSet)) {
+                    $_sContent = strip_tags(html_entity_decode($oResultItem->sContent, ENT_NOQUOTES, $GLOBALS['TL_CONFIG']['characterSet']), $sAllowedTags);
+                    $this->_writeSingleItem($aSet, $aRssImportRow,$_sContent );
+                }
+
                 else
                     return false;
             } // endforeach $arSimplePieItems
@@ -317,8 +311,9 @@ class RssImport3 extends \Backend
      *
      * @param array $aSet
      * @param array $aNewsArchiveRow
+     * @param string $sContent
      */
-    private function _writeSingleItem($aSet, $aRssImportRow)
+    private function _writeSingleItem($aSet, $aRssImportRow, $sContent=NULL)
     {
         // Lese parent id
         $iPid = $aRssImportRow['id'];
@@ -332,8 +327,8 @@ class RssImport3 extends \Backend
         // pruefe, ob Beitrag bereits in DB existiert
         $oResult = $this->Database->prepare("SELECT * FROM $this->_sTable WHERE rssimp_guid=? AND pid=? ")
             ->execute($sGuid, $iPid);
-        if ($oResult->numRows < 1)         // Beitrag existiert noch nicht => sql insert
-        {
+        if ($oResult->numRows < 1) {
+            // Beitrag existiert noch nicht => sql insert
             $this->_iStatsItemsInserted += 1;
             // neuen Beitrag einfuegen
             $oResult = $this->Database->prepare("INSERT INTO $this->_sTable %s")
@@ -353,26 +348,63 @@ class RssImport3 extends \Backend
             $this->Database->prepare("UPDATE $this->_sTable %s WHERE id=? ")
                 ->set($aSet)
                 ->execute($iNewsId);
-        } else         // Beitrag existiert, ist aber aktueller => sql update
-        {
+
+            // Content Element generieren, falls vorhanden
+            if (isset($sContent) && $sContent != '') {
+                $_aContent = array(
+                                'pid' => $iNewsId,
+                                'ptable' => $this->_sTable,
+                                'sorting' => 128,
+                                'tstamp' => $aSet['tstamp'],
+                                'type' => 'text',
+                                'text' => $sContent
+                );
+                $this->Database->prepare("INSERT INTO tl_content %s")
+                    ->set($_aContent)
+                    ->execute();
+            }
+
+        } else {
+            // Beitrag existiert, ist aber aktueller => sql update
             $oRow = $oResult->fetchAssoc(); // lies ersten Datensatz
             $iNewsId = $oRow['id']; // lies id (DS mit selber guid wie Beitrag)
             $iTlDate = ($oRow['tstamp'] > $oRow['date']) ? $oRow['tstamp'] : $oRow['date']; // lies
                                                                                             // update-Datum
-            if ($iTlDate < $iItemDate)             // Beitrag ist aktueller?
-            {
+            if ($iTlDate < $iItemDate) {
+                // Beitrag ist aktueller?
                 $this->_iStatsItemsUpdated += 1;
                 // alte lokale Kopie fuer enclosures (images) loeschen, wenn vorhanden
                 if (strlen($oRow['singleSRC']) > 1)
                     unlink(TL_ROOT . '/' . $oRow[singleSRC]);
 
-                    // lokale Kopie fuer enclosures (images) bereitstellen
+                // lokale Kopie fuer enclosures (images) bereitstellen
                 if (strlen($aSet['imageUrl']) > 1)
                     $this->_makeLocal($aSet, $iNewsId, $aRssImportRow);
-                    // update ausfuehren
+                // update ausfuehren
                 $this->Database->prepare("UPDATE $this->_sTable %s WHERE id=? ")
                     ->set($aSet)
                     ->execute($iNewsId);
+
+
+                // Content Element aktualisieren
+                if (isset($sContent) && $sContent != '') {
+                    $_aContent = array(
+                            'pid' => $iNewsId,
+                            'ptable' => $this->_sTable,
+                            'sorting' => 128,
+                            'tstamp' => $aSet['tstamp'],
+                            'type' => 'text',
+                            'text' => $sContent
+                    );
+                    $this->Database->prepare("DELETE FROM tl_content WHERE ptable = $this->_sTable AND pid = ?")
+                        ->execute($iNewsId);
+                    $this->Database->prepare("INSERT INTO tl_content %s")
+                    ->set($_aContent)
+                    ->execute();
+                }
+
+
+
             }
         }
     }
@@ -422,7 +454,7 @@ class RssImport3 extends \Backend
         if (strlen($sLocalPath) < 2) // dulde keinen Leerstring als Basispfad
             $this->_sMakeLocalErrorWarning .= ' empty basepath for downloads not allowed';
 
-            // setze lokalen Dateinamen: sLocalPath + filename + _ + id + extension
+        // setze lokalen Dateinamen: sLocalPath + filename + _ + id + extension
         $arInfo = pathinfo($sExtUrl);
         $arInfo['extension'] = strtolower($arInfo['extension']); // hole suffix;
         $sFilename = standardize(basename($sExtUrl, '.' . $arInfo['extension'])); // hole dateinamen
