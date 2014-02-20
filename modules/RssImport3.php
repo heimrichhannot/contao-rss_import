@@ -16,7 +16,7 @@ namespace fipps\xRssImport;
 /**
  * Class RssImport3
  */
-class RssImport3 extends \Backend
+class RssImport3 extends \Contao\Backend
 {
     private $_iStatsItemsRead;
     private $_iStatsItemsInserted;
@@ -27,6 +27,14 @@ class RssImport3 extends \Backend
     const TL_NEWS_ARCHIVE = 'tl_news_archive';
     const TL_EVENTS = 'tl_calendar_events';
     const TL_CALENDAR = 'tl_calendar';
+
+    /**
+     * Invoke parent constructor
+     */
+     public function __construct() {
+         return parent::__construct();
+    }
+
 
     /**
      * Import all new designated feeds for news, could periodically be called by a Cron-Job
@@ -166,8 +174,8 @@ class RssImport3 extends \Backend
         //$sTable = ($this->_sTable == self::TL_NEWS) ? self::TL_NEWS_ARCHIVE : self::TL_CALENDAR;
         $sTable = self::TL_NEWS_ARCHIVE;
         $sql = "SELECT $sTable.*, tl_files.path FROM $sTable";
-        $sql .= "LEFT JOIN tl_files ON rssimp_imgpath LIKE uuid";
-        $sql .= "WHERE rssimp_imp = ?";
+        $sql .= " LEFT JOIN tl_files ON rssimp_imgpath LIKE uuid";
+        $sql .= " WHERE rssimp_imp = ?";
 
         if (isset($sql)) {
             $oResult = $this->Database->prepare($sql)
