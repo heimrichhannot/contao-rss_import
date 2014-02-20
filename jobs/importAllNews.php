@@ -13,5 +13,6 @@
  */
 namespace fipps\xRssImport;
 
+
 $rssImport = new RssImport3();
 $rssImport->importAllNewsFeeds();
