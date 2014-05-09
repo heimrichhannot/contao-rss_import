@@ -17,7 +17,7 @@ $this->loadLanguageFile('tl_news');
 
 // Table tl_news_archive
 $GLOBALS['TL_DCA']['tl_news_archive']['config']['ondelete_callback'][] = array(
-                                                                            'RssImport3',
+                                                                            'fipps\xRssImport\RssImport3',
                                                                             'deleteAttachments'
 );
 
