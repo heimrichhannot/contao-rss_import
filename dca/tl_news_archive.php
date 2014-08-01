@@ -10,10 +10,10 @@
  * @package fipps\xRssImport
  * @license LGPL
  */
-
 // Load tl_content language file
 $this->loadLanguageFile('tl_content');
 $this->loadLanguageFile('tl_news');
+$this->import('BackendUser', 'User');
 
 // Table tl_news_archive
 $GLOBALS['TL_DCA']['tl_news_archive']['config']['ondelete_callback'][] = array(
@@ -56,7 +56,6 @@ $tmpfields = array(
                                     'label' => &$GLOBALS['TL_LANG']['tl_news_archive']['rssimp_imp'],
                                     'inputType' => 'checkbox',
                                     'exclude' => true,
-                                    'default' => '',
                                     'eval' => array(
                                                     'mandatory' => false,
                                                     'isBoolean' => true,
@@ -226,7 +225,8 @@ $tmpfields = array(
                                                         'includeBlankOption' => true,
                                                         'tl_class' => 'w50'
                                         ),
-                                        'sql' => "int(10) unsigned NOT NULL default '0'"
+                                        'sql' => "int(10) unsigned NOT NULL default '0'",
+										'relation' => array('type'=>'hasOne', 'load'=>'eager')
                 ),
 
                 'rssimp_source' => array(
