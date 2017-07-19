@@ -1,4 +1,4 @@
-# xRssImport3
+# Contao RSS import
 
 RSS Nachrichten-Import für Contao ab 3.2.x
 
